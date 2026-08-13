@@ -118,6 +118,17 @@ public class CharacterVisual : MonoBehaviour
         ApplyTint();
     }
 
+    public void HideBody()
+    {
+        BindIfNeeded();
+        if (visualRoot != null && visualRoot != transform)
+            visualRoot.gameObject.SetActive(false);
+
+        CharacterStatusUI status = GetComponentInChildren<CharacterStatusUI>(true);
+        if (status != null)
+            status.gameObject.SetActive(false);
+    }
+
     void ApplyTint()
     {
         if (layers == null || layers.Length == 0)

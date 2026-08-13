@@ -38,6 +38,9 @@ public class CharacterFeedback : MonoBehaviour
     [Header("Shake")]
     [SerializeField] float shakeDuration = 0.18f;
     [SerializeField] float shakeStrength = 0.12f;
+    [SerializeField] float deathHideDelay = 0.4f;
+
+    public float DeathHideDelay => Mathf.Max(shakeDuration, deathHideDelay);
 
     Coroutine shakeRoutine;
     Vector3 visualRest = Vector3.zero;
@@ -160,6 +163,8 @@ public class CharacterFeedback : MonoBehaviour
 
     void Shake()
     {
+        if (!isActiveAndEnabled)
+            return;
         if (shakeRoot == null)
             Bind();
         if (shakeRoot == null)

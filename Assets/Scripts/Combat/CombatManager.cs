@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -11,8 +12,9 @@ public class CombatManager : MonoBehaviour
     [SerializeField] Player player;
     [SerializeField] Enemy enemyPrefab;
     [SerializeField] Transform enemiesRoot;
-    [SerializeField] Vector3 firstEnemyPosition = new Vector3(2.2f, 0.4f, 0f);
+    [SerializeField] Transform formationCenter;
     [SerializeField] float enemySpacing = 2.1f;
+    [SerializeField] int maxEnemies = 4;
     [SerializeField] DeckManager deckManager;
     [SerializeField] TurnManager turnManager;
     [SerializeField] EncounterData fallbackEncounter;
@@ -313,9 +315,14 @@ public class CombatManager : MonoBehaviour
             return;
 
         CancelPending();
-        turnManager.ResolveEnemyTurn();
+        StartCoroutine(EndTurnRoutine());
+    }
+
+    IEnumerator EndTurnRoutine()
+    {
+        yield return turnManager.ResolveEnemyTurn();
         if (FinishIfOver())
-            return;
+            yield break;
 
         turnManager.BeginPlayerTurn();
     }
@@ -460,22 +467,40 @@ public class CombatManager : MonoBehaviour
         }
 
         Transform parent = enemiesRoot != null ? enemiesRoot : transform;
-        int spawned = 0;
+        int count = 0;
         for (int i = 0; i < encounter.Enemies.Count; i++)
+        {
+            if (encounter.Enemies[i] != null)
+                count++;
+        }
+
+        count = Mathf.Min(count, Mathf.Max(0, maxEnemies));
+        int spawned = 0;
+        for (int i = 0; i < encounter.Enemies.Count && spawned < count; i++)
         {
             EnemyData data = encounter.Enemies[i];
             if (data == null)
                 continue;
 
+            float offsetX = (spawned - (count - 1) * 0.5f) * enemySpacing;
             Enemy instance = Instantiate(enemyPrefab, parent);
             instance.name = data.DisplayName;
-            instance.transform.localPosition = firstEnemyPosition + new Vector3(spawned * enemySpacing, 0f, 0f);
+            instance.transform.position = FormationWorldPosition(offsetX);
             instance.Initialize(data);
             spawnedEnemies.Add(instance);
             spawned++;
         }
 
         EnsureValidSelection();
+    }
+
+    Vector3 FormationWorldPosition(float offsetX)
+    {
+        if (formationCenter != null)
+            return formationCenter.TransformPoint(new Vector3(offsetX, 0f, 0f));
+
+        Transform parent = enemiesRoot != null ? enemiesRoot : transform;
+        return parent.TransformPoint(new Vector3(offsetX, 0f, 0f));
     }
 
     void ClearSpawnedEnemies()

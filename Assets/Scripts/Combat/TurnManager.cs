@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,13 +9,14 @@ public enum TurnPhase
 }
 
 /// <summary>
-/// Player and enemy turns. Resets energy, draws, then runs each living enemy intent.
+/// Player and enemy turns. Resets energy, draws, then runs each living enemy intent in order.
 /// </summary>
 public class TurnManager : MonoBehaviour
 {
     [SerializeField] Player player;
     [SerializeField] DeckManager deckManager;
     [SerializeField] int cardsPerTurn = 5;
+    [SerializeField] float delayBetweenEnemyActions = 0.75f;
 
     IReadOnlyList<Enemy> enemies;
 
@@ -40,10 +42,10 @@ public class TurnManager : MonoBehaviour
             deckManager.DrawCards(cardsPerTurn);
     }
 
-    public void ResolveEnemyTurn()
+    public IEnumerator ResolveEnemyTurn()
     {
         if (CurrentPhase != TurnPhase.PlayerTurn)
-            return;
+            yield break;
 
         CurrentPhase = TurnPhase.EnemyTurn;
 
@@ -51,7 +53,7 @@ public class TurnManager : MonoBehaviour
             deckManager.DiscardHand();
 
         if (enemies == null)
-            return;
+            yield break;
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -63,9 +65,10 @@ public class TurnManager : MonoBehaviour
             enemy.ExecuteIntent(player);
             enemy.ChooseNextIntent();
 
+            yield return new WaitForSeconds(delayBetweenEnemyActions);
+
             if (player != null && !player.IsAlive)
                 break;
         }
     }
 }
-

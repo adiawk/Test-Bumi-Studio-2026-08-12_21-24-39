@@ -15,5 +15,5 @@ MonoBehaviour:
   displayName: Brigand
   maxHp: 40
   attackDamage: 8
-  visualPrefab: {fileID: 9004148124358793283, guid: 34a3833850ccfea4d8e03f8f79f95a8e, type: 3}
+  visualPrefab: {fileID: 9004148124358793283, guid: ebe6851b109ba2946a140e78f51150ec, type: 3}
   defendBlock: 5

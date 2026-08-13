@@ -15,5 +15,5 @@ MonoBehaviour:
   displayName: Cultist
   maxHp: 28
   attackDamage: 6
-  visualPrefab: {fileID: 991401981467936336, guid: 2193cfa0c41207e4399c5aa3be1aa7e1, type: 3}
+  visualPrefab: {fileID: 991401981467936336, guid: 37d60c52f87fdd4458adf7eb9ca69f15, type: 3}
   defendBlock: 4

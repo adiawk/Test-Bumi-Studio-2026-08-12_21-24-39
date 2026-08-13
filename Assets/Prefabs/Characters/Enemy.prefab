@@ -212,12 +212,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   visualRoot: {fileID: 193388550703810720}
+  shakeRoot: {fileID: 0}
+  animator: {fileID: 0}
+  attackTrigger: Attack
+  blockTrigger: Block
+  healTrigger: Heal
+  hitTrigger: Hit
+  dieTrigger: Die
   hitPrefab: {fileID: 7390539322754966590, guid: 363cdfec871d50346925ce52a038d230, type: 3}
   blockPrefab: {fileID: 7456747772257143814, guid: 2e32e8f3b373c444a80f0f506e1a2fe7, type: 3}
   healPrefab: {fileID: 1104888692427197012, guid: 67746651e578c5b429ffb04faac2b1c4, type: 3}
   hitSprite: {fileID: 0}
   blockSprite: {fileID: 0}
   healSprite: {fileID: 0}
+  attackSfx: {fileID: 0}
   hitSfx: {fileID: 0}
   blockSfx: {fileID: 0}
   healSfx: {fileID: 0}
@@ -319,6 +327,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 193388550703810720}
+  - component: {fileID: 2826674344658025334}
   m_Layer: 0
   m_Name: Visual
   m_TagString: Untagged
@@ -343,6 +352,18 @@ Transform:
   - {fileID: 5025273356280254140}
   m_Father: {fileID: 2092617340200329457}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!210 &2826674344658025334
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8334462510371552566}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 1
+  m_SortAtRoot: 0
 --- !u!1001 &8477393906473748651
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -377,7 +398,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 487431772359156958, guid: c6c611bad0e672441813996a846e5c44, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 240
+      value: 288.7588
       objectReference: {fileID: 0}
     - target: {fileID: 487431772359156958, guid: c6c611bad0e672441813996a846e5c44, type: 3}
       propertyPath: m_SizeDelta.y
@@ -413,11 +434,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 487431772359156958, guid: c6c611bad0e672441813996a846e5c44, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 0.24
       objectReference: {fileID: 0}
     - target: {fileID: 487431772359156958, guid: c6c611bad0e672441813996a846e5c44, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1.9
+      value: -1.65
       objectReference: {fileID: 0}
     - target: {fileID: 487431772359156958, guid: c6c611bad0e672441813996a846e5c44, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
