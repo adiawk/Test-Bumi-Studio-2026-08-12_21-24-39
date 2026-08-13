@@ -37,55 +37,63 @@ public class GameManager : MonoBehaviour
             runManager = GetComponent<RunManager>();
 
         runManager.StartNewRun();
-        LoadScene(SceneNames.Combat);
+        LoadMap();
     }
 
-public void NotifyCombatWon()
+    public void NotifyMapNodeSelected(StageNodeButton node)
+    {
+        if (runManager == null || node == null)
+            return;
+
+        EncounterData encounter = node.Encounter;
+        if (encounter == null && node.NodeType != MapNodeType.Reward)
+            encounter = runManager.GetEncounterForNodeType(node.NodeType);
+
+        runManager.Stages.SelectNode(node.NodeId, node.NodeType, encounter);
+
+        if (node.NodeType == MapNodeType.Reward)
+            LoadReward();
+        else
+            LoadCombat();
+    }
+
+    public void NotifyCombatWon()
     {
         if (runManager == null)
             return;
 
-        StageId stage = runManager.Stages.CurrentStage;
-        if (stage == StageId.Stage1Combat)
+        MapNodeType nodeType = runManager.Stages.SelectedNodeType;
+        runManager.Stages.CompleteSelectedNode();
+
+        if (nodeType == MapNodeType.Boss)
         {
-            runManager.Stages.Advance();
-            LoadReward();
+            runManager.SetLastRunWon(true);
+            LoadResult();
             return;
         }
 
-        if (stage == StageId.Stage2Combat)
-        {
-            runManager.Stages.Advance();
-            LoadCombat();
-            return;
-        }
-
-        runManager.Stages.Advance();
-        runManager.SetLastRunWon(true);
-        LoadResult();
+        LoadMap();
     }
 
-public void NotifyCombatLost()
+    public void NotifyCombatLost()
     {
         if (runManager != null)
             runManager.SetLastRunWon(false);
         LoadResult();
     }
 
-public void NotifyRewardChosen(CardData card)
+    public void NotifyRewardChosen(CardData card)
     {
         if (runManager != null)
         {
             runManager.AddCardToRunDeck(card);
-            runManager.Stages.Advance();
+            runManager.Stages.CompleteSelectedNode();
         }
-        LoadCombat();
+        LoadMap();
     }
 
-
-
-
     public void LoadMainMenu() => LoadScene(SceneNames.MainMenu);
+    public void LoadMap() => LoadScene(SceneNames.Map);
     public void LoadCombat() => LoadScene(SceneNames.Combat);
     public void LoadReward() => LoadScene(SceneNames.Reward);
     public void LoadResult() => LoadScene(SceneNames.Result);

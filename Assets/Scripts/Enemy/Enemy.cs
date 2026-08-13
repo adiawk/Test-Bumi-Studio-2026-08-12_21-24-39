@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -83,7 +84,13 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
         body.ClearBlock();
     }
 
-    public void TakeDamage(int amount) => body.TakeDamage(amount);
+    public void TakeDamage(int amount)
+    {
+        body.TakeDamage(amount);
+        if (!IsAlive)
+            Die();
+    }
+
     public void GainBlock(int amount) => body.GainBlock(amount);
     public void Heal(int amount) => body.Heal(amount);
 
@@ -111,11 +118,21 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
             feedback.PlayHealFeedback();
     }
 
-    void LateUpdate()
+    void Die()
     {
         if (visual != null)
-            visual.SetAlive(IsAlive);
-        if (!IsAlive && feedback != null)
+            visual.SetAlive(false);
+        if (feedback != null)
             feedback.PlayDeathFeedback();
+        StartCoroutine(HideBodyAfterFeedback());
+    }
+
+    IEnumerator HideBodyAfterFeedback()
+    {
+        yield return null;
+        float delay = feedback != null ? feedback.DeathHideDelay : 0.4f;
+        yield return new WaitForSeconds(delay);
+        if (visual != null)
+            visual.HideBody();
     }
 }

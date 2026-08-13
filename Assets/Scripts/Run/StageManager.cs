@@ -1,35 +1,53 @@
-using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
-/// Linear run stages for the MVP. No procedural map.
-/// </summary>
-public enum StageId
-{
-    Stage1Combat,
-    CardReward,
-    Stage2Combat,
-    BossCombat,
-    Victory
-}
-
-/// <summary>
-/// Tracks the current run stage. Owned by RunManager, not a scene singleton.
+/// Tracks the player's place on a hand-authored chapter map.
 /// </summary>
 public class StageManager
 {
-    public StageId CurrentStage { get; private set; }
+    readonly List<string> clearedNodeIds = new List<string>();
+
+    public string LastCompletedNodeId { get; private set; }
+    public string SelectedNodeId { get; private set; }
+    public MapNodeType SelectedNodeType { get; private set; }
+    public EncounterData SelectedEncounter { get; private set; }
+    public IReadOnlyList<string> ClearedNodeIds => clearedNodeIds;
 
     public void ResetToStart()
     {
-        CurrentStage = StageId.Stage1Combat;
+        clearedNodeIds.Clear();
+        LastCompletedNodeId = null;
+        ClearSelection();
     }
 
-    public void Advance()
+    public void SelectNode(string nodeId, MapNodeType nodeType, EncounterData encounter)
     {
-        if (CurrentStage == StageId.Victory)
+        SelectedNodeId = nodeId;
+        SelectedNodeType = nodeType;
+        SelectedEncounter = encounter;
+    }
+
+    public void CompleteSelectedNode()
+    {
+        if (string.IsNullOrEmpty(SelectedNodeId))
             return;
 
-        CurrentStage = (StageId)((int)CurrentStage + 1);
-        Debug.Log($"[StageManager] Advanced to {CurrentStage}.");
+        if (!clearedNodeIds.Contains(SelectedNodeId))
+            clearedNodeIds.Add(SelectedNodeId);
+
+        LastCompletedNodeId = SelectedNodeId;
+        ClearSelection();
+    }
+
+    public bool IsCleared(string nodeId)
+    {
+        return !string.IsNullOrEmpty(nodeId) && clearedNodeIds.Contains(nodeId);
+    }
+
+    void ClearSelection()
+    {
+        SelectedNodeId = null;
+        SelectedNodeType = MapNodeType.Combat;
+        SelectedEncounter = null;
     }
 }
