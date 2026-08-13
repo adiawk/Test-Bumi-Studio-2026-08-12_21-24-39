@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Owns one dungeon run: which stage the player is on.
+/// Owns one dungeon run: map progress, HP, and the run deck.
 /// Does not own combat resolution or card data.
 /// </summary>
 public class RunManager : MonoBehaviour
@@ -28,10 +28,17 @@ public class RunManager : MonoBehaviour
 
     public EncounterData GetCurrentEncounter()
     {
-        StageId stage = stageManager.CurrentStage;
-        if (stage == StageId.BossCombat)
+        if (stageManager.SelectedEncounter != null)
+            return stageManager.SelectedEncounter;
+
+        return GetEncounterForNodeType(stageManager.SelectedNodeType);
+    }
+
+    public EncounterData GetEncounterForNodeType(MapNodeType nodeType)
+    {
+        if (nodeType == MapNodeType.Boss)
             return bossEncounter;
-        if (stage == StageId.Stage2Combat)
+        if (nodeType == MapNodeType.Elite)
             return stage2Encounter;
         return stage1Encounter;
     }
@@ -76,4 +83,3 @@ public class RunManager : MonoBehaviour
         LastRunWon = won;
     }
 }
-

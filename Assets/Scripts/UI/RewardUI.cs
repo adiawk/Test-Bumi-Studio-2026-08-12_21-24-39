@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -96,7 +95,6 @@ void Choose(int index)
             return;
         }
 
-        GameManager.Instance.Run.Stages.Advance();
-        GameManager.Instance.LoadCombat();
+        GameManager.Instance.NotifyRewardChosen(null);
     }
 }

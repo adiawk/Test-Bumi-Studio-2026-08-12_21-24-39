@@ -2811,6 +2811,7 @@ MonoBehaviour:
   healSfx: {fileID: 0}
   shakeDuration: 0.18
   shakeStrength: 0.12
+  deathHideDelay: 0.4
 --- !u!1 &2074671145
 GameObject:
   m_ObjectHideFlags: 0
@@ -3120,7 +3121,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4577693501316885080, guid: 2c3567cb1abed2b4dac33b5604316ed4, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6067922914604239501, guid: 2c3567cb1abed2b4dac33b5604316ed4, type: 3}
       propertyPath: m_IsActive
