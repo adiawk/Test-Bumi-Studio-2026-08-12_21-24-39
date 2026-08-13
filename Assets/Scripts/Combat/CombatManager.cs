@@ -18,10 +18,14 @@ public class CombatManager : MonoBehaviour
     [SerializeField] EncounterData fallbackEncounter;
     [SerializeField] int playerMaxHp = 50;
     [SerializeField] int playerMaxEnergy = 3;
+    [SerializeField] CardTargetIndicator targetIndicatorPrefab;
 
     readonly List<Enemy> spawnedEnemies = new List<Enemy>();
     Enemy selectedEnemy;
     RuntimeCard pendingCard;
+    CardTargetIndicator activeIndicator;
+    bool isDraggingCard;
+    IEffectTarget dragHoverTarget;
 
     public bool IsCombatActive { get; private set; }
     public Player Player => player;
@@ -29,6 +33,7 @@ public class CombatManager : MonoBehaviour
     public Enemy SelectedEnemy => selectedEnemy;
     public RuntimeCard PendingCard => pendingCard;
     public DeckManager Deck => deckManager;
+    public bool IsDraggingCard => isDraggingCard;
 
     void Start()
     {
@@ -46,9 +51,14 @@ public class CombatManager : MonoBehaviour
 
         if (mouse.rightButton.wasPressedThisFrame)
         {
+            CancelCardDrag();
             CancelPending();
             return;
         }
+
+        // Drag-to-target owns input while a card is being dragged.
+        if (isDraggingCard)
+            return;
 
         if (!mouse.leftButton.wasPressedThisFrame)
             return;
@@ -167,6 +177,100 @@ public class CombatManager : MonoBehaviour
         RefreshSelectionVisuals();
     }
 
+    public bool BeginCardDrag(RuntimeCard card)
+    {
+        if (!CanPlayCard(card))
+            return false;
+
+        pendingCard = card;
+        isDraggingCard = true;
+        dragHoverTarget = null;
+        HideTargetIndicator();
+        RefreshSelectionVisuals();
+        return true;
+    }
+
+    public void UpdateCardDragHover(Vector2 screenPosition)
+    {
+        if (!isDraggingCard || pendingCard == null || pendingCard.Data == null)
+        {
+            HideTargetIndicator();
+            return;
+        }
+
+        IEffectTarget hit = FindTargetAtScreen(screenPosition);
+        IEffectTarget valid = ResolveValidDragTarget(pendingCard, hit, 0f, float.PositiveInfinity);
+        if (valid == dragHoverTarget)
+            return;
+
+        dragHoverTarget = valid;
+        ShowTargetIndicator(valid as MonoBehaviour);
+        if (valid is Enemy enemy)
+            SelectEnemy(enemy);
+        else
+            RefreshSelectionVisuals();
+    }
+
+    public bool TryConfirmCardDrag(RuntimeCard card, IEffectTarget hoveredTarget, float liftAmount, float playLiftThreshold)
+    {
+        if (!isDraggingCard || card == null || card != pendingCard)
+        {
+            CancelCardDrag();
+            return false;
+        }
+
+        IEffectTarget target = ResolveValidDragTarget(card, hoveredTarget, liftAmount, playLiftThreshold);
+        isDraggingCard = false;
+        dragHoverTarget = null;
+        HideTargetIndicator();
+
+        if (target == null)
+        {
+            CancelPending();
+            return false;
+        }
+
+        PlayPendingOn(target);
+        return true;
+    }
+
+    public void CancelCardDrag()
+    {
+        if (!isDraggingCard && pendingCard == null)
+        {
+            HideTargetIndicator();
+            return;
+        }
+
+        isDraggingCard = false;
+        dragHoverTarget = null;
+        HideTargetIndicator();
+        CancelPending();
+    }
+
+    public IEffectTarget FindTargetAtScreen(Vector2 screenPosition)
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+            return null;
+
+        Vector3 world = cam.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -cam.transform.position.z));
+        Collider2D hit = Physics2D.OverlapPoint(world);
+        if (hit == null)
+            return null;
+
+        Enemy enemy = hit.GetComponent<Enemy>();
+        if (enemy == null)
+            enemy = hit.GetComponentInParent<Enemy>();
+        if (enemy != null && enemy.IsAlive)
+            return enemy;
+
+        Player hitPlayer = hit.GetComponent<Player>();
+        if (hitPlayer == null)
+            hitPlayer = hit.GetComponentInParent<Player>();
+        return hitPlayer;
+    }
+
     public void TryPlayCard(RuntimeCard card)
     {
         BeginPlay(card);
@@ -199,9 +303,15 @@ public class CombatManager : MonoBehaviour
     public void CancelPending()
     {
         if (pendingCard == null)
+        {
+            HideTargetIndicator();
             return;
+        }
 
         pendingCard = null;
+        isDraggingCard = false;
+        dragHoverTarget = null;
+        HideTargetIndicator();
         RefreshSelectionVisuals();
     }
 
@@ -209,7 +319,71 @@ public class CombatManager : MonoBehaviour
     {
         RuntimeCard card = pendingCard;
         pendingCard = null;
+        isDraggingCard = false;
+        dragHoverTarget = null;
+        HideTargetIndicator();
         PlayCard(card, target);
+    }
+
+    IEffectTarget ResolveValidDragTarget(RuntimeCard card, IEffectTarget hoveredTarget, float liftAmount, float playLiftThreshold)
+    {
+        if (card == null || card.Data == null)
+            return null;
+
+        CardTargetType targetType = card.Data.TargetType;
+        if (targetType == CardTargetType.Enemy)
+        {
+            Enemy enemy = hoveredTarget as Enemy;
+            if (enemy != null && enemy.IsAlive)
+                return enemy;
+            return null;
+        }
+
+        if (targetType == CardTargetType.Self)
+        {
+            if (hoveredTarget is Player)
+                return player;
+            if (liftAmount >= playLiftThreshold)
+                return player;
+            return null;
+        }
+
+        // None: play when dragged up far enough, or dropped on the player.
+        if (hoveredTarget is Player || liftAmount >= playLiftThreshold)
+            return player;
+
+        return null;
+    }
+
+    void ShowTargetIndicator(MonoBehaviour targetBehaviour)
+    {
+        if (targetBehaviour == null)
+        {
+            HideTargetIndicator();
+            return;
+        }
+
+        EnsureTargetIndicator();
+        if (activeIndicator == null)
+            return;
+
+        activeIndicator.Show(targetBehaviour.transform);
+    }
+
+    void HideTargetIndicator()
+    {
+        if (activeIndicator != null)
+            activeIndicator.Hide();
+    }
+
+    void EnsureTargetIndicator()
+    {
+        if (activeIndicator != null || targetIndicatorPrefab == null)
+            return;
+
+        activeIndicator = Instantiate(targetIndicatorPrefab);
+        activeIndicator.name = "CardTargetIndicator";
+        activeIndicator.Hide();
     }
 
     void PlayCard(RuntimeCard card, IEffectTarget target)
@@ -272,6 +446,9 @@ public class CombatManager : MonoBehaviour
         spawnedEnemies.Clear();
         selectedEnemy = null;
         pendingCard = null;
+        isDraggingCard = false;
+        dragHoverTarget = null;
+        HideTargetIndicator();
     }
 
     Enemy FirstLivingEnemy()
@@ -357,6 +534,9 @@ public class CombatManager : MonoBehaviour
     {
         IsCombatActive = false;
         pendingCard = null;
+        isDraggingCard = false;
+        dragHoverTarget = null;
+        HideTargetIndicator();
     }
 }
 

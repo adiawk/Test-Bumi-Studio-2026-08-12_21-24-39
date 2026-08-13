@@ -2,15 +2,16 @@ using UnityEngine;
 
 /// <summary>
 /// Combat enemy with a telegraphing intent. No AI beyond a two-step pattern.
-/// Lives on the character root; sprites live under Visual.
+/// Lives on the character root; the animated body is spawned under Visual from EnemyData.
 /// </summary>
-public class Enemy : MonoBehaviour, IEffectTarget
+public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
 {
     readonly Combatant body = new Combatant();
 
     EnemyData data;
     bool nextIsAttack = true;
     CharacterVisual visual;
+    CharacterFeedback feedback;
 
     public int Hp => body.Hp;
     public int MaxHp => body.MaxHp;
@@ -24,6 +25,7 @@ public class Enemy : MonoBehaviour, IEffectTarget
     void Awake()
     {
         visual = GetComponent<CharacterVisual>();
+        feedback = GetComponent<CharacterFeedback>();
     }
 
     public void Initialize(EnemyData enemyData)
@@ -36,8 +38,10 @@ public class Enemy : MonoBehaviour, IEffectTarget
 
         if (visual == null)
             visual = GetComponent<CharacterVisual>();
+        if (feedback == null)
+            feedback = GetComponent<CharacterFeedback>();
         if (visual != null && data != null)
-            visual.ApplyLayers(data.VisualLayers);
+            visual.ApplyVisualPrefab(data.VisualPrefab);
     }
 
     public void ChooseNextIntent()
@@ -57,12 +61,21 @@ public class Enemy : MonoBehaviour, IEffectTarget
     {
         if (CurrentIntent.Type == IntentType.Attack)
         {
+            if (feedback != null)
+                feedback.PlayAttackFeedback();
             if (player != null)
+            {
                 player.TakeDamage(CurrentIntent.Value);
+                ICombatFeedback playerFx = player as ICombatFeedback;
+                if (playerFx != null)
+                    playerFx.PlayHitFeedback();
+            }
             return;
         }
 
         body.GainBlock(CurrentIntent.Value);
+        if (feedback != null)
+            feedback.PlayBlockFeedback();
     }
 
     public void ClearBlock()
@@ -74,10 +87,35 @@ public class Enemy : MonoBehaviour, IEffectTarget
     public void GainBlock(int amount) => body.GainBlock(amount);
     public void Heal(int amount) => body.Heal(amount);
 
+    public void PlayAttackFeedback()
+    {
+        if (feedback != null)
+            feedback.PlayAttackFeedback();
+    }
+
+    public void PlayHitFeedback()
+    {
+        if (feedback != null)
+            feedback.PlayHitFeedback();
+    }
+
+    public void PlayBlockFeedback()
+    {
+        if (feedback != null)
+            feedback.PlayBlockFeedback();
+    }
+
+    public void PlayHealFeedback()
+    {
+        if (feedback != null)
+            feedback.PlayHealFeedback();
+    }
+
     void LateUpdate()
     {
         if (visual != null)
             visual.SetAlive(IsAlive);
+        if (!IsAlive && feedback != null)
+            feedback.PlayDeathFeedback();
     }
 }
-

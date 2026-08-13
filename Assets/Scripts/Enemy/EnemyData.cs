@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine;
 
 /// <summary>
@@ -11,15 +9,12 @@ public class EnemyData : ScriptableObject
     [SerializeField] string displayName = "Enemy";
     [SerializeField] int maxHp = 40;
     [SerializeField] int attackDamage = 8;
-    
-    [SerializeField] List<Sprite> visualLayers = new List<Sprite>();
-[SerializeField] int defendBlock = 5;
+    [SerializeField] GameObject visualPrefab;
+    [SerializeField] int defendBlock = 5;
 
     public string DisplayName => displayName;
     public int MaxHp => maxHp;
     public int AttackDamage => attackDamage;
     public int DefendBlock => defendBlock;
-
-
-public IReadOnlyList<Sprite> VisualLayers => visualLayers;
+    public GameObject VisualPrefab => visualPrefab;
 }

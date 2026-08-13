@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// World-space HP / block / intent billboard parented to a character root.
@@ -8,6 +9,7 @@ public class CharacterStatusUI : MonoBehaviour
 {
     [SerializeField] TextMeshProUGUI nameText;
     [SerializeField] TextMeshProUGUI hpText;
+    [SerializeField] Slider hpSlider;
     [SerializeField] TextMeshProUGUI blockText;
     [SerializeField] TextMeshProUGUI intentText;
     [SerializeField] bool showIntent = true;
@@ -24,6 +26,11 @@ public class CharacterStatusUI : MonoBehaviour
         if (canvas != null && canvas.worldCamera == null)
             canvas.worldCamera = Camera.main;
 
+        if (hpSlider == null)
+            hpSlider = GetComponentInChildren<Slider>(true);
+        if (hpSlider != null)
+            hpSlider.interactable = false;
+
         if (intentText != null)
             intentText.gameObject.SetActive(showIntent && enemy != null);
     }
@@ -33,8 +40,8 @@ public class CharacterStatusUI : MonoBehaviour
         if (enemy != null)
         {
             SetLine(nameText, enemy.DisplayName);
-            SetLine(hpText, "HP " + enemy.Hp + "/" + enemy.MaxHp);
-            SetLine(blockText, "Block " + enemy.Block);
+            SetHp(enemy.Hp, enemy.MaxHp);
+            SetLine(blockText, enemy.Block.ToString());
             SetLine(intentText, enemy.IntentLabel);
             return;
         }
@@ -42,11 +49,23 @@ public class CharacterStatusUI : MonoBehaviour
         if (player != null)
         {
             SetLine(nameText, "Player");
-            SetLine(hpText, "HP " + player.Hp + "/" + player.MaxHp);
-            SetLine(blockText, "Block " + player.Block);
+            SetHp(player.Hp, player.MaxHp);
+            SetLine(blockText, player.Block.ToString());
             if (intentText != null)
                 intentText.gameObject.SetActive(false);
         }
+    }
+
+    void SetHp(int current, int max)
+    {
+        SetLine(hpText, current + "/" + max);
+        if (hpSlider == null)
+            return;
+
+        hpSlider.minValue = 0f;
+        hpSlider.maxValue = Mathf.Max(1, max);
+        hpSlider.wholeNumbers = true;
+        hpSlider.value = Mathf.Clamp(current, 0, max);
     }
 
     static void SetLine(TextMeshProUGUI label, string value)

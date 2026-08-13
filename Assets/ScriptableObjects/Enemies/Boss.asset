@@ -15,7 +15,5 @@ MonoBehaviour:
   displayName: Warden
   maxHp: 70
   attackDamage: 12
-  visualLayers:
-  - {fileID: 21300000, guid: dfe65b597bbdee4468662c4c00c4c53f, type: 3}
-  - {fileID: 21300000, guid: 738e23f8db680cb4f8b83c9ad48edd88, type: 3}
+  visualPrefab: {fileID: 4014102701525976569, guid: 38947812e8cf920428b69c901854f464, type: 3}
   defendBlock: 8

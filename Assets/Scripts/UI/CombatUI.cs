@@ -22,6 +22,7 @@ public class CombatUI : MonoBehaviour
     [SerializeField] Player player;
 
     [SerializeField] CombatManager combatManager;
+    [SerializeField] UICard cardPrefab;
     int spawnedHandCount = -1;
     RuntimeCard spawnedFirstCard;
 
@@ -60,7 +61,7 @@ void Refresh()
         {
             string energy = "Energy\n" + combatPlayer.Energy + "/" + combatPlayer.MaxEnergy;
             if (combatManager != null && combatManager.PendingCard != null)
-                energy += "\nPick target";
+                energy += combatManager.IsDraggingCard ? "\nDrop on target" : "\nPick target";
             energyText.text = energy;
         }
 
@@ -89,11 +90,19 @@ void Refresh()
         if (spawnedHandCount == hand.Count && spawnedFirstCard == first)
             return;
 
+        if (cardPrefab == null)
+            return;
+
         for (int i = handArea.childCount - 1; i >= 0; i--)
             Destroy(handArea.GetChild(i).gameObject);
 
         for (int i = 0; i < hand.Count; i++)
-            CardView.Create(handArea, hand[i], combatManager);
+        {
+            UICard view = Instantiate(cardPrefab, handArea);
+            view.gameObject.SetActive(true);
+            view.name = "Card_" + hand[i].Name;
+            view.Bind(hand[i], combatManager);
+        }
 
         spawnedHandCount = hand.Count;
         spawnedFirstCard = first;

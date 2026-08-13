@@ -10,11 +10,14 @@ public class BlockEffect : CardEffect
 
     public int Amount => amount;
 
-    public override void Resolve(EffectContext context)
+public override void Resolve(EffectContext context)
     {
         if (context == null || context.Source == null)
             return;
 
         context.Source.GainBlock(amount);
+        ICombatFeedback feedback = context.Source as ICombatFeedback;
+        if (feedback != null)
+            feedback.PlayBlockFeedback();
     }
 }

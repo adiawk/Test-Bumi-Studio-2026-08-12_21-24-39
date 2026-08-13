@@ -10,11 +10,14 @@ public class HealEffect : CardEffect
 
     public int Amount => amount;
 
-    public override void Resolve(EffectContext context)
+public override void Resolve(EffectContext context)
     {
         if (context == null || context.Source == null)
             return;
 
         context.Source.Heal(amount);
+        ICombatFeedback feedback = context.Source as ICombatFeedback;
+        if (feedback != null)
+            feedback.PlayHealFeedback();
     }
 }

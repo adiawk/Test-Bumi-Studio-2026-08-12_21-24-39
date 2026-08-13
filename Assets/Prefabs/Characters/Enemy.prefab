@@ -99,6 +99,7 @@ GameObject:
   - component: {fileID: 4298725943161540863}
   - component: {fileID: 8278168522964120044}
   - component: {fileID: 29784891910916201}
+  - component: {fileID: 8241001122334455667}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -198,6 +199,30 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1.8, y: 2.6}
   m_EdgeRadius: 0
+--- !u!114 &8241001122334455667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4577693501316885080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32434d8ed51db4643880bea25b797e80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  visualRoot: {fileID: 193388550703810720}
+  hitPrefab: {fileID: 7390539322754966590, guid: 363cdfec871d50346925ce52a038d230, type: 3}
+  blockPrefab: {fileID: 7456747772257143814, guid: 2e32e8f3b373c444a80f0f506e1a2fe7, type: 3}
+  healPrefab: {fileID: 1104888692427197012, guid: 67746651e578c5b429ffb04faac2b1c4, type: 3}
+  hitSprite: {fileID: 0}
+  blockSprite: {fileID: 0}
+  healSprite: {fileID: 0}
+  hitSfx: {fileID: 0}
+  blockSfx: {fileID: 0}
+  healSfx: {fileID: 0}
+  shakeDuration: 0.18
+  shakeStrength: 0.12
 --- !u!1 &6067922914604239501
 GameObject:
   m_ObjectHideFlags: 0
