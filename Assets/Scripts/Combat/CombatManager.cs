@@ -19,11 +19,13 @@ public class CombatManager : MonoBehaviour
     [SerializeField] int playerMaxHp = 50;
     [SerializeField] int playerMaxEnergy = 3;
     [SerializeField] CardTargetIndicator targetIndicatorPrefab;
+    [SerializeField] CardTargetPointer targetPointerPrefab;
 
     readonly List<Enemy> spawnedEnemies = new List<Enemy>();
     Enemy selectedEnemy;
     RuntimeCard pendingCard;
     CardTargetIndicator activeIndicator;
+    CardTargetPointer activePointer;
     bool isDraggingCard;
     IEffectTarget dragHoverTarget;
 
@@ -186,6 +188,7 @@ public class CombatManager : MonoBehaviour
         isDraggingCard = true;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
         RefreshSelectionVisuals();
         return true;
     }
@@ -211,6 +214,29 @@ public class CombatManager : MonoBehaviour
             RefreshSelectionVisuals();
     }
 
+    public void SetTargetPointer(Transform canvasParent, Vector2 fromCanvasLocal, Vector2 toCanvasLocal, bool visible)
+    {
+        if (!visible)
+        {
+            HideTargetPointer();
+            return;
+        }
+
+        EnsureTargetPointer(canvasParent);
+        if (activePointer == null)
+            return;
+
+        activePointer.transform.SetParent(canvasParent, false);
+        activePointer.transform.SetAsLastSibling();
+        activePointer.Show(fromCanvasLocal, toCanvasLocal);
+    }
+
+    public void HideTargetPointer()
+    {
+        if (activePointer != null)
+            activePointer.Hide();
+    }
+
     public bool TryConfirmCardDrag(RuntimeCard card, IEffectTarget hoveredTarget, float liftAmount, float playLiftThreshold)
     {
         if (!isDraggingCard || card == null || card != pendingCard)
@@ -223,6 +249,7 @@ public class CombatManager : MonoBehaviour
         isDraggingCard = false;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
 
         if (target == null)
         {
@@ -239,12 +266,14 @@ public class CombatManager : MonoBehaviour
         if (!isDraggingCard && pendingCard == null)
         {
             HideTargetIndicator();
+            HideTargetPointer();
             return;
         }
 
         isDraggingCard = false;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
         CancelPending();
     }
 
@@ -305,6 +334,7 @@ public class CombatManager : MonoBehaviour
         if (pendingCard == null)
         {
             HideTargetIndicator();
+            HideTargetPointer();
             return;
         }
 
@@ -312,6 +342,7 @@ public class CombatManager : MonoBehaviour
         isDraggingCard = false;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
         RefreshSelectionVisuals();
     }
 
@@ -322,6 +353,7 @@ public class CombatManager : MonoBehaviour
         isDraggingCard = false;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
         PlayCard(card, target);
     }
 
@@ -384,6 +416,17 @@ public class CombatManager : MonoBehaviour
         activeIndicator = Instantiate(targetIndicatorPrefab);
         activeIndicator.name = "CardTargetIndicator";
         activeIndicator.Hide();
+    }
+
+    void EnsureTargetPointer(Transform canvasParent)
+    {
+        if (activePointer != null || targetPointerPrefab == null)
+            return;
+
+        Transform parent = canvasParent != null ? canvasParent : transform;
+        activePointer = Instantiate(targetPointerPrefab, parent);
+        activePointer.name = "CardTargetPointer";
+        activePointer.Hide();
     }
 
     void PlayCard(RuntimeCard card, IEffectTarget target)
@@ -449,6 +492,7 @@ public class CombatManager : MonoBehaviour
         isDraggingCard = false;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
     }
 
     Enemy FirstLivingEnemy()
@@ -537,6 +581,7 @@ public class CombatManager : MonoBehaviour
         isDraggingCard = false;
         dragHoverTarget = null;
         HideTargetIndicator();
+        HideTargetPointer();
     }
 }
 

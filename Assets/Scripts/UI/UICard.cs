@@ -3,21 +3,44 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+/// <summary>
+/// Layout root stays in the hand. Visual child handles hover/drag motion.
+/// </summary>
 public class UICard : MonoBehaviour,
     IPointerEnterHandler,
     IPointerExitHandler,
     IBeginDragHandler,
     IDragHandler,
-    IEndDragHandler
+    IEndDragHandler,
+    IPointerMoveHandler
 {
+    [Header("Content")]
+    [SerializeField] RectTransform visual;
     [SerializeField] TextMeshProUGUI cardNameText;
     [SerializeField] TextMeshProUGUI cardDescriptionText;
     [SerializeField] TextMeshProUGUI cardEnergyCostText;
     [SerializeField] Image background;
     [SerializeField] Button button;
-    [SerializeField] float hoverScale = 1.12f;
-    [SerializeField] float hoverLift = 36f;
-    [SerializeField] float playLiftThreshold = 120f;
+
+    [Header("Hover")]
+    [SerializeField] float hoverScale = 1.14f;
+    [SerializeField] float hoverLift = 42f;
+    [SerializeField] float hoverTiltDegrees = 6f;
+
+    [Header("Drag")]
+    [SerializeField] float dragScale = 1.18f;
+    [SerializeField] float dragTiltPerVelocity = 0.035f;
+    [SerializeField] float maxDragTilt = 14f;
+    [SerializeField] float playLiftThreshold = 100f;
+    [SerializeField] float dragLiftLimit = 100f;
+    [SerializeField] float dragFollowXFactor = 0.2f;
+    [SerializeField] float pointerOriginOffsetY = 90f;
+
+    [Header("Spring")]
+    [SerializeField] float positionSpring = 18f;
+    [SerializeField] float scaleSpring = 16f;
+    [SerializeField] float tiltSpring = 14f;
+    [SerializeField] float settleEpsilon = 0.6f;
 
     RuntimeCard card;
     CombatManager combatManager;
@@ -26,12 +49,25 @@ public class UICard : MonoBehaviour,
 
     RectTransform rectTransform;
     Canvas rootCanvas;
-    Transform handParent;
-    int handSiblingIndex;
-    Vector2 restAnchoredPosition;
-    Vector3 restLocalScale = Vector3.one;
-    bool restCached;
+    Camera eventCamera;
+    Transform visualHomeParent;
+    Canvas visualCanvas;
+    int visualDefaultSortOrder;
+
+    Vector2 visualRestLocalPos;
+    Vector3 visualRestScale = Vector3.one;
+    Vector2 targetVisualPos;
+    Vector3 targetVisualScale = Vector3.one;
+    float targetTiltZ;
+    Vector2 lastPointerCanvasPos;
+    Vector2 pointerVelocity;
+
+    bool hovered;
     bool dragging;
+    bool returning;
+    bool exactFollow;
+    bool pastDragLimit;
+
     LayoutElement layoutElement;
     CanvasGroup canvasGroup;
 
@@ -51,6 +87,7 @@ public class UICard : MonoBehaviour,
         combatManager = combat;
         SetCard(runtimeCard != null ? runtimeCard.Data : null);
 
+        EnsureVisual();
         if (button == null)
             button = GetComponent<Button>();
         if (button != null)
@@ -60,20 +97,30 @@ public class UICard : MonoBehaviour,
             button.transition = Selectable.Transition.None;
         }
 
-        if (background == null)
-            background = GetComponent<Image>();
+        if (background == null && visual != null)
+            background = visual.GetComponentInChildren<Image>(true);
+
         CacheBackgroundColor();
-        CacheRestPose();
-        ApplyHoverVisual(false);
+        ResetVisualHome();
+        hovered = false;
+        dragging = false;
+        returning = false;
+        exactFollow = false;
+        pastDragLimit = false;
+        targetVisualPos = visualRestLocalPos;
+        targetVisualScale = visualRestScale;
+        targetTiltZ = 0f;
+        ApplyVisualImmediate();
+        SetVisualSortBoost(false);
     }
 
     void Awake()
     {
         rectTransform = transform as RectTransform;
+        EnsureVisual();
+
         if (button == null)
             button = GetComponent<Button>();
-        if (background == null)
-            background = GetComponent<Image>();
 
         layoutElement = GetComponent<LayoutElement>();
         if (layoutElement == null)
@@ -93,6 +140,51 @@ public class UICard : MonoBehaviour,
 
         if (dragging && combatManager != null)
             combatManager.CancelCardDrag();
+
+        if (combatManager != null)
+            combatManager.HideTargetPointer();
+    }
+
+    void Update()
+    {
+        if (visual == null)
+            return;
+
+        if (!dragging && !hovered && !returning)
+            return;
+
+        float dt = Time.unscaledDeltaTime;
+
+        if (exactFollow)
+            visual.anchoredPosition = targetVisualPos;
+        else
+        {
+            visual.anchoredPosition = Vector2.Lerp(
+                visual.anchoredPosition,
+                targetVisualPos,
+                1f - Mathf.Exp(-positionSpring * dt));
+        }
+
+        visual.localScale = Vector3.Lerp(
+            visual.localScale,
+            targetVisualScale,
+            1f - Mathf.Exp(-scaleSpring * dt));
+
+        float currentZ = NormalizeAngle(visual.localEulerAngles.z);
+        float nextZ = Mathf.Lerp(currentZ, targetTiltZ, 1f - Mathf.Exp(-tiltSpring * dt));
+        visual.localRotation = Quaternion.Euler(0f, 0f, nextZ);
+
+        if (returning && !dragging && !hovered)
+        {
+            if (Vector2.Distance(visual.anchoredPosition, targetVisualPos) <= settleEpsilon
+                && Mathf.Abs(NormalizeAngle(visual.localEulerAngles.z) - targetTiltZ) < 0.35f
+                && (visual.localScale - targetVisualScale).sqrMagnitude < 0.0004f)
+            {
+                returning = false;
+                ApplyVisualImmediate();
+                SetVisualSortBoost(false);
+            }
+        }
     }
 
     void LateUpdate()
@@ -117,15 +209,13 @@ public class UICard : MonoBehaviour,
         if (dragging)
             return;
 
-        CacheRestPose();
-        if (layoutElement != null)
-        {
-            layoutElement.ignoreLayout = true;
-            layoutElement.preferredWidth = rectTransform.rect.width;
-            layoutElement.preferredHeight = rectTransform.rect.height;
-        }
-
-        ApplyHoverVisual(true);
+        EnsureVisual();
+        hovered = true;
+        returning = false;
+        exactFollow = false;
+        CacheEventCamera(eventData);
+        UpdateHoverTargets(eventData);
+        SetVisualSortBoost(true);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -133,10 +223,20 @@ public class UICard : MonoBehaviour,
         if (dragging)
             return;
 
-        if (layoutElement != null)
-            layoutElement.ignoreLayout = false;
+        hovered = false;
+        returning = true;
+        exactFollow = false;
+        targetVisualPos = visualRestLocalPos;
+        targetVisualScale = visualRestScale;
+        targetTiltZ = 0f;
+    }
 
-        ApplyHoverVisual(false);
+    public void OnPointerMove(PointerEventData eventData)
+    {
+        if (!hovered || dragging)
+            return;
+
+        UpdateHoverTargets(eventData);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -147,31 +247,61 @@ public class UICard : MonoBehaviour,
         if (!combatManager.BeginCardDrag(card))
             return;
 
+        EnsureVisual();
         dragging = true;
-        CacheRestPose();
-
-        handParent = transform.parent;
-        handSiblingIndex = transform.GetSiblingIndex();
+        hovered = false;
+        returning = false;
+        exactFollow = true;
+        pastDragLimit = false;
+        CacheEventCamera(eventData);
         rootCanvas = GetComponentInParent<Canvas>();
-        if (rootCanvas != null)
-            transform.SetParent(rootCanvas.transform, true);
 
-        if (layoutElement != null)
-            layoutElement.ignoreLayout = true;
         if (canvasGroup != null)
             canvasGroup.blocksRaycasts = false;
 
-        transform.SetAsLastSibling();
-        ApplyHoverVisual(true);
-        FollowPointer(eventData);
+        // Detach visual only — root slot stays in HorizontalLayoutGroup.
+        if (rootCanvas != null)
+            visual.SetParent(rootCanvas.transform, true);
+
+        visual.SetAsLastSibling();
+        SetVisualSortBoost(true);
+
+        if (TryGetCanvasLocalPoint(eventData.position, out Vector2 pointerLocal))
+        {
+            lastPointerCanvasPos = pointerLocal;
+            pointerVelocity = Vector2.zero;
+            Vector2 clamped = ClampDragPosition(pointerLocal, out pastDragLimit);
+            targetVisualPos = clamped;
+            visual.anchoredPosition = clamped;
+            UpdateTargetPointer(pointerLocal, pastDragLimit);
+        }
+
+        targetVisualScale = visualRestScale * dragScale;
+        targetTiltZ = 0f;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!dragging)
+        if (!dragging || visual == null)
             return;
 
-        FollowPointer(eventData);
+        if (!TryGetCanvasLocalPoint(eventData.position, out Vector2 pointerLocal))
+            return;
+
+        float dt = Mathf.Max(Time.unscaledDeltaTime, 0.0001f);
+        pointerVelocity = (pointerLocal - lastPointerCanvasPos) / dt;
+        lastPointerCanvasPos = pointerLocal;
+
+        Vector2 clamped = ClampDragPosition(pointerLocal, out pastDragLimit);
+        targetVisualPos = clamped;
+        visual.anchoredPosition = clamped;
+        targetVisualScale = visualRestScale * dragScale;
+        targetTiltZ = pastDragLimit
+            ? 0f
+            : Mathf.Clamp(-pointerVelocity.x * dragTiltPerVelocity, -maxDragTilt, maxDragTilt);
+
+        UpdateTargetPointer(pointerLocal, pastDragLimit);
+
         if (combatManager != null)
             combatManager.UpdateCardDragHover(eventData.position);
     }
@@ -182,25 +312,47 @@ public class UICard : MonoBehaviour,
             return;
 
         dragging = false;
+        exactFollow = false;
+
         IEffectTarget target = combatManager != null
             ? combatManager.FindTargetAtScreen(eventData.position)
             : null;
 
+        float liftForPlay = pastDragLimit
+            ? Mathf.Max(GetDragLiftAmount(), playLiftThreshold)
+            : GetDragLiftAmount();
+
         bool played = combatManager != null
-            && combatManager.TryConfirmCardDrag(card, target, GetDragLiftAmount(), playLiftThreshold);
+            && combatManager.TryConfirmCardDrag(card, target, liftForPlay, playLiftThreshold);
 
-        RestoreToHand();
-        if (layoutElement != null)
-            layoutElement.ignoreLayout = false;
-        ApplyHoverVisual(false);
+        pastDragLimit = false;
+        if (combatManager != null)
+            combatManager.HideTargetPointer();
 
-        if (!played && combatManager != null)
+        if (canvasGroup != null)
+            canvasGroup.blocksRaycasts = true;
+
+        if (played)
+        {
+            // Hide immediately; hand refresh will destroy the slot shortly after.
+            if (visual != null)
+            {
+                if (visualHomeParent != null)
+                    visual.SetParent(visualHomeParent, false);
+                visual.gameObject.SetActive(false);
+            }
+
+            gameObject.SetActive(false);
+            return;
+        }
+
+        BeginReturnVisualHome();
+        if (combatManager != null)
             combatManager.CancelCardDrag();
     }
 
     void OnClicked()
     {
-        // Drag is the primary play path; click quick-plays non-enemy cards only.
         if (dragging || combatManager == null || card == null || card.Data == null)
             return;
 
@@ -210,88 +362,246 @@ public class UICard : MonoBehaviour,
         combatManager.BeginPlay(card);
     }
 
-    void FollowPointer(PointerEventData eventData)
+    void UpdateHoverTargets(PointerEventData eventData)
+    {
+        targetVisualPos = visualRestLocalPos + new Vector2(0f, hoverLift);
+        targetVisualScale = visualRestScale * hoverScale;
+
+        if (TryGetPointerInVisualParent(eventData.position, out Vector2 localPointer))
+        {
+            Vector2 delta = localPointer - targetVisualPos;
+            targetTiltZ = Mathf.Clamp(-delta.x / 80f * hoverTiltDegrees, -hoverTiltDegrees, hoverTiltDegrees);
+        }
+        else
+        {
+            targetTiltZ = 0f;
+        }
+    }
+
+    void BeginReturnVisualHome()
+    {
+        EnsureVisual();
+        if (visualHomeParent == null)
+            visualHomeParent = transform;
+
+        if (combatManager != null)
+            combatManager.HideTargetPointer();
+
+        // Keep world pose, then spring back to local rest under the slot.
+        visual.SetParent(visualHomeParent, true);
+        visual.SetAsLastSibling();
+        returning = true;
+        hovered = false;
+        exactFollow = false;
+        pastDragLimit = false;
+        targetVisualPos = visualRestLocalPos;
+        targetVisualScale = visualRestScale;
+        targetTiltZ = 0f;
+    }
+
+    Vector2 ClampDragPosition(Vector2 pointerCanvasLocal, out bool overLimit)
+    {
+        Vector2 slotCanvas = GetSlotCanvasPosition();
+        float maxY = slotCanvas.y + dragLiftLimit;
+        overLimit = pointerCanvasLocal.y > maxY;
+
+        if (!overLimit)
+            return pointerCanvasLocal;
+
+        // Lock near the play line so the card does not cover battlefield targets.
+        float x = Mathf.Lerp(slotCanvas.x, pointerCanvasLocal.x, dragFollowXFactor);
+        return new Vector2(x, maxY);
+    }
+
+    void UpdateTargetPointer(Vector2 pointerCanvasLocal, bool overLimit)
+    {
+        if (combatManager == null || rootCanvas == null)
+            return;
+
+        bool needsPointer = overLimit
+            && card != null
+            && card.Data != null
+            && card.Data.TargetType == CardTargetType.Enemy;
+
+        if (!needsPointer)
+        {
+            combatManager.HideTargetPointer();
+            return;
+        }
+
+        Vector2 from = visual != null
+            ? visual.anchoredPosition + new Vector2(0f, pointerOriginOffsetY)
+            : GetSlotCanvasPosition() + new Vector2(0f, pointerOriginOffsetY);
+
+        combatManager.SetTargetPointer(rootCanvas.transform, from, pointerCanvasLocal, true);
+    }
+
+    Vector2 GetSlotCanvasPosition()
+    {
+        Canvas canvas = rootCanvas != null ? rootCanvas : GetComponentInParent<Canvas>();
+        if (canvas == null || rectTransform == null)
+            return Vector2.zero;
+
+        return canvas.transform.InverseTransformPoint(rectTransform.position);
+    }
+
+    void ResetVisualHome()
+    {
+        EnsureVisual();
+        if (visual == null)
+            return;
+
+        if (visual.parent != transform)
+            visual.SetParent(transform, false);
+
+        visualHomeParent = transform;
+        visual.anchorMin = new Vector2(0.5f, 0.5f);
+        visual.anchorMax = new Vector2(0.5f, 0.5f);
+        visual.pivot = new Vector2(0.5f, 0.5f);
+        visual.sizeDelta = rectTransform != null ? rectTransform.rect.size : visual.sizeDelta;
+        visualRestLocalPos = Vector2.zero;
+        visualRestScale = Vector3.one;
+        visual.anchoredPosition = visualRestLocalPos;
+        visual.localScale = visualRestScale;
+        visual.localRotation = Quaternion.identity;
+    }
+
+    void EnsureVisual()
     {
         if (rectTransform == null)
+            rectTransform = transform as RectTransform;
+
+        if (visual != null)
+        {
+            EnsureVisualCanvas();
+            return;
+        }
+
+        Transform existing = transform.Find("Visual");
+        if (existing != null)
+        {
+            visual = existing as RectTransform;
+            EnsureVisualCanvas();
+            return;
+        }
+
+        GameObject visualGo = new GameObject("Visual", typeof(RectTransform));
+        visual = visualGo.GetComponent<RectTransform>();
+        visual.SetParent(transform, false);
+        visual.anchorMin = new Vector2(0.5f, 0.5f);
+        visual.anchorMax = new Vector2(0.5f, 0.5f);
+        visual.pivot = new Vector2(0.5f, 0.5f);
+        visual.anchoredPosition = Vector2.zero;
+        visual.localScale = Vector3.one;
+        if (rectTransform != null)
+            visual.sizeDelta = rectTransform.rect.size;
+
+        // Move current visual children under the container (skip utilities).
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = transform.GetChild(i);
+            if (child == visual)
+                continue;
+            child.SetParent(visual, true);
+        }
+
+        visualHomeParent = transform;
+        EnsureVisualCanvas();
+    }
+
+    void EnsureVisualCanvas()
+    {
+        if (visual == null)
             return;
 
+        visualCanvas = visual.GetComponent<Canvas>();
+        if (visualCanvas == null)
+            visualCanvas = visual.gameObject.AddComponent<Canvas>();
+
+        visualDefaultSortOrder = visualCanvas.sortingOrder;
+        if (visual.GetComponent<GraphicRaycaster>() == null)
+            visual.gameObject.AddComponent<GraphicRaycaster>();
+    }
+
+    void SetVisualSortBoost(bool boosted)
+    {
+        if (visualCanvas == null)
+            EnsureVisualCanvas();
+        if (visualCanvas == null)
+            return;
+
+        visualCanvas.overrideSorting = boosted;
+        visualCanvas.sortingOrder = boosted ? visualDefaultSortOrder + 100 : visualDefaultSortOrder;
+    }
+
+    void ApplyVisualImmediate()
+    {
+        if (visual == null)
+            return;
+
+        visual.anchoredPosition = targetVisualPos;
+        visual.localScale = targetVisualScale;
+        visual.localRotation = Quaternion.Euler(0f, 0f, targetTiltZ);
+    }
+
+    bool TryGetCanvasLocalPoint(Vector2 screenPosition, out Vector2 localPoint)
+    {
+        localPoint = Vector2.zero;
         Canvas canvas = rootCanvas != null ? rootCanvas : GetComponentInParent<Canvas>();
         if (canvas == null)
-            return;
+            return false;
 
-        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : eventData.pressEventCamera;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvas.transform as RectTransform,
-                eventData.position,
-                cam,
-                out Vector2 localPoint))
-        {
-            rectTransform.anchoredPosition = localPoint;
-        }
+        rootCanvas = canvas;
+        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : eventCamera;
+        return RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvas.transform as RectTransform,
+            screenPosition,
+            cam,
+            out localPoint);
+    }
+
+    bool TryGetPointerInVisualParent(Vector2 screenPosition, out Vector2 localPoint)
+    {
+        localPoint = Vector2.zero;
+        if (visual == null || visual.parent is not RectTransform parentRect)
+            return false;
+
+        Canvas canvas = GetComponentInParent<Canvas>();
+        Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? eventCamera : null;
+        return RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            parentRect,
+            screenPosition,
+            cam,
+            out localPoint);
+    }
+
+    void CacheEventCamera(PointerEventData eventData)
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            eventCamera = eventData.pressEventCamera != null ? eventData.pressEventCamera : canvas.worldCamera;
+        else
+            eventCamera = null;
     }
 
     float GetDragLiftAmount()
     {
-        if (!restCached || rectTransform == null || handParent == null)
+        if (visual == null || rectTransform == null)
             return 0f;
 
-        Vector3 worldRest = handParent.TransformPoint(new Vector3(restAnchoredPosition.x, restAnchoredPosition.y, 0f));
-        return rectTransform.position.y - worldRest.y;
+        Canvas canvas = rootCanvas != null ? rootCanvas : GetComponentInParent<Canvas>();
+        if (canvas == null)
+            return visual.anchoredPosition.y;
+
+        Vector3 slotCanvas = canvas.transform.InverseTransformPoint(rectTransform.position);
+        return visual.anchoredPosition.y - slotCanvas.y;
     }
 
-    void RestoreToHand()
+    static float NormalizeAngle(float angle)
     {
-        if (handParent != null)
-        {
-            transform.SetParent(handParent, false);
-            transform.SetSiblingIndex(handSiblingIndex);
-        }
-
-        if (layoutElement != null)
-            layoutElement.ignoreLayout = false;
-        if (canvasGroup != null)
-            canvasGroup.blocksRaycasts = true;
-
-        if (restCached && rectTransform != null)
-        {
-            rectTransform.anchoredPosition = restAnchoredPosition;
-            rectTransform.localScale = restLocalScale;
-        }
-    }
-
-    void CacheRestPose()
-    {
-        if (dragging)
-            return;
-
-        if (rectTransform == null)
-            rectTransform = transform as RectTransform;
-        if (rectTransform == null)
-            return;
-
-        restAnchoredPosition = rectTransform.anchoredPosition;
-        restLocalScale = Vector3.one;
-        restCached = true;
-    }
-
-    void ApplyHoverVisual(bool enabled)
-    {
-        if (rectTransform == null)
-            rectTransform = transform as RectTransform;
-        if (rectTransform == null || !restCached)
-            return;
-
-        if (enabled)
-        {
-            rectTransform.localScale = restLocalScale * hoverScale;
-            if (!dragging)
-                rectTransform.anchoredPosition = restAnchoredPosition + new Vector2(0f, hoverLift);
-        }
-        else if (!dragging)
-        {
-            rectTransform.localScale = restLocalScale;
-            rectTransform.anchoredPosition = restAnchoredPosition;
-        }
+        if (angle > 180f)
+            angle -= 360f;
+        return angle;
     }
 
     void CacheBackgroundColor()
