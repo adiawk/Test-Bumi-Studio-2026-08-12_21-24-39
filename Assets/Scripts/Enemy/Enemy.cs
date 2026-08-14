@@ -17,6 +17,7 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
     public int MaxHp => body.MaxHp;
     public int Block => body.Block;
     public bool IsAlive => body.IsAlive;
+    public StatusBag Statuses => body.Statuses;
     public EnemyIntent CurrentIntent { get; private set; }
     public string IntentLabel => CurrentIntent.Label;
     public string DisplayName => data != null ? data.DisplayName : "Enemy";
@@ -57,6 +58,17 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
         nextIsAttack = !nextIsAttack;
     }
 
+    public void ApplyStatus(StatusId id, int stacks)
+    {
+        if (id == StatusId.StartBlock)
+        {
+            GainBlock(stacks);
+            return;
+        }
+
+        Statuses.Apply(id, stacks);
+    }
+
     public void ExecuteIntent(IEffectTarget player)
     {
         if (CurrentIntent.Type == IntentType.Attack)
@@ -65,7 +77,11 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
                 feedback.PlayAttackFeedback();
             if (player != null)
             {
-                player.TakeDamage(CurrentIntent.Value);
+                int damage = Statuses.ModifyOutgoingAttack(CurrentIntent.Value);
+                Player playerActor = player as Player;
+                if (playerActor != null)
+                    damage = playerActor.Statuses.ModifyIncomingAttack(damage);
+                player.TakeDamage(damage);
                 ICombatFeedback playerFx = player as ICombatFeedback;
                 if (playerFx != null)
                     playerFx.PlayHitFeedback();

@@ -20,6 +20,7 @@ public class Player : MonoBehaviour, IEffectTarget, ICombatFeedback
     public int Energy { get; private set; }
     public int MaxEnergy { get; private set; }
     public bool IsAlive => body.IsAlive;
+    public StatusBag Statuses => body.Statuses;
     public DeckManager Deck { get; private set; }
 
     void Awake()
@@ -49,6 +50,15 @@ public class Player : MonoBehaviour, IEffectTarget, ICombatFeedback
         Energy = MaxEnergy;
     }
 
+    public void AddMaxEnergy(int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        MaxEnergy += amount;
+        Energy += amount;
+    }
+
     public bool TrySpendEnergy(int cost)
     {
         if (cost < 0 || Energy < cost)
@@ -56,6 +66,23 @@ public class Player : MonoBehaviour, IEffectTarget, ICombatFeedback
 
         Energy -= cost;
         return true;
+    }
+
+    public void ApplyStatus(StatusId id, int stacks)
+    {
+        if (id == StatusId.StartBlock)
+        {
+            GainBlock(stacks);
+            return;
+        }
+
+        if (id == StatusId.ExtraEnergy)
+        {
+            AddMaxEnergy(stacks);
+            return;
+        }
+
+        Statuses.Apply(id, stacks);
     }
 
     public void ClearBlock()

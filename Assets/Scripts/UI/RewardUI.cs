@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Card reward placeholders. Selection logic comes in a later phase.
+/// Offers three rewards from the run reward pool (cards, heals, next-combat buffs/debuffs).
 /// </summary>
 public class RewardUI : MonoBehaviour
 {
@@ -12,24 +12,24 @@ public class RewardUI : MonoBehaviour
     [SerializeField] Button cardChoice2Button;
     [SerializeField] Button cardChoice3Button;
     [SerializeField] Button continueButton;
-    readonly CardData[] offered = new CardData[3];
+    readonly RewardData[] offered = new RewardData[3];
 
     void Start()
     {
         if (continueButton != null)
             continueButton.gameObject.SetActive(false);
 
-        OfferCards();
+        OfferRewards();
         BindChoice(cardChoice1Button, 0);
         BindChoice(cardChoice2Button, 1);
         BindChoice(cardChoice3Button, 2);
     }
 
-void OfferCards()
+    void OfferRewards()
     {
-        List<CardData> pool = new List<CardData>();
+        List<RewardData> pool = new List<RewardData>();
         RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
-        IReadOnlyList<CardData> source = run != null ? run.RewardPool : null;
+        IReadOnlyList<RewardData> source = run != null ? run.RewardPool : null;
         if (source != null)
         {
             for (int i = 0; i < source.Count; i++)
@@ -47,32 +47,29 @@ void OfferCards()
         }
     }
 
-void BindChoice(Button button, int index)
+    void BindChoice(Button button, int index)
     {
         if (button == null)
             return;
 
-        bool hasCard = offered[index] != null;
-        button.interactable = hasCard;
+        bool hasReward = offered[index] != null;
+        button.interactable = hasReward;
         TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
-        if (label != null && hasCard)
-            label.text = offered[index].CardName + "\n" + offered[index].Cost + " energy\n" + offered[index].Description;
+        if (label != null && hasReward)
+            label.text = offered[index].OfferLabel;
 
         int captured = index;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() => Choose(captured));
     }
 
-void Choose(int index)
+    void Choose(int index)
     {
         if (offered[index] == null || GameManager.Instance == null)
             return;
 
         GameManager.Instance.NotifyRewardChosen(offered[index]);
     }
-
-
-
 
     void OnDestroy()
     {

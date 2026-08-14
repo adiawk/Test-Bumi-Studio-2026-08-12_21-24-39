@@ -41,7 +41,7 @@ public class CharacterStatusUI : MonoBehaviour
         {
             SetLine(nameText, enemy.DisplayName);
             SetHp(enemy.Hp, enemy.MaxHp);
-            SetLine(blockText, enemy.Block.ToString());
+            SetLine(blockText, FormatBlockAndStatus(enemy.Block, enemy.Statuses));
             SetLine(intentText, enemy.IntentLabel);
             return;
         }
@@ -50,10 +50,18 @@ public class CharacterStatusUI : MonoBehaviour
         {
             SetLine(nameText, "Player");
             SetHp(player.Hp, player.MaxHp);
-            SetLine(blockText, player.Block.ToString());
+            SetLine(blockText, FormatBlockAndStatus(player.Block, player.Statuses));
             if (intentText != null)
                 intentText.gameObject.SetActive(false);
         }
+    }
+
+    static string FormatBlockAndStatus(int block, StatusBag statuses)
+    {
+        string status = statuses != null ? statuses.BuildLabel() : string.Empty;
+        if (string.IsNullOrEmpty(status))
+            return block.ToString();
+        return block + " | " + status;
     }
 
     void SetHp(int current, int max)

@@ -15,7 +15,22 @@ public override void Resolve(EffectContext context)
         if (context == null || context.Target == null)
             return;
 
-        context.Target.TakeDamage(amount);
+        int damage = amount;
+        Player sourcePlayer = context.Source as Player;
+        if (sourcePlayer != null)
+            damage = sourcePlayer.Statuses.ModifyOutgoingAttack(damage);
+
+        Enemy targetEnemy = context.Target as Enemy;
+        if (targetEnemy != null)
+            damage = targetEnemy.Statuses.ModifyIncomingAttack(damage);
+        else
+        {
+            Player targetPlayer = context.Target as Player;
+            if (targetPlayer != null)
+                damage = targetPlayer.Statuses.ModifyIncomingAttack(damage);
+        }
+
+        context.Target.TakeDamage(damage);
 
         ICombatFeedback sourceFx = context.Source as ICombatFeedback;
         if (sourceFx != null)

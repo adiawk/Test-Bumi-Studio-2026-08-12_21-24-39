@@ -82,11 +82,11 @@ public class GameManager : MonoBehaviour
         LoadResult();
     }
 
-    public void NotifyRewardChosen(CardData card)
+    public void NotifyRewardChosen(RewardData reward)
     {
         if (runManager != null)
         {
-            runManager.AddCardToRunDeck(card);
+            runManager.TryApplyReward(reward);
             runManager.Stages.CompleteSelectedNode();
         }
         LoadMap();

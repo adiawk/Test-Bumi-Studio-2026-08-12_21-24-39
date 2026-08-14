@@ -137,6 +137,10 @@ public class CombatManager : MonoBehaviour
             turnManager.Bind(player, spawnedEnemies);
             turnManager.BeginPlayerTurn();
         }
+
+        // After turn start so StartBlock survives ClearBlock and ExtraEnergy survives ResetEnergy.
+        if (run != null)
+            run.ApplyPendingCombatModifiers(player, spawnedEnemies);
     }
 
     public bool CanPlayCard(RuntimeCard card)

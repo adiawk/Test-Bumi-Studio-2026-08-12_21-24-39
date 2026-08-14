@@ -719,14 +719,20 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 21ed14819cdf8024aad75ff11685307a, type: 2}
   - {fileID: 11400000, guid: 635962caa240f58499063fe57fadbc85, type: 2}
   rewardPool:
-  - {fileID: 11400000, guid: 0bcf9c050d11e6348b9966bdd85fa456, type: 2}
-  - {fileID: 11400000, guid: 21ed14819cdf8024aad75ff11685307a, type: 2}
-  - {fileID: 11400000, guid: 0f92ee941379c49499a37fa529eafd11, type: 2}
-  - {fileID: 11400000, guid: 635962caa240f58499063fe57fadbc85, type: 2}
-  - {fileID: 11400000, guid: d928a049c84d4024281fdcc05c6c2cc1, type: 2}
+  - {fileID: 11400000, guid: f3e7ea20d62e4295a655200252ab65c3, type: 2}
+  - {fileID: 11400000, guid: 2655755a73344f498207c91e3a46bb62, type: 2}
+  - {fileID: 11400000, guid: 14bb0f91819e4f8ba4de3f352c2af383, type: 2}
+  - {fileID: 11400000, guid: 0289cc96010744a59273c6289828550b, type: 2}
+  - {fileID: 11400000, guid: 4c5e5fe764b64acbbf348a27e13f3b27, type: 2}
+  - {fileID: 11400000, guid: de933c33593541c8a9ec230c28665928, type: 2}
+  - {fileID: 11400000, guid: 248586bac44e497ab7cf49f79856ef0d, type: 2}
+  - {fileID: 11400000, guid: 9accfb79ebd54fcca898188f281faba3, type: 2}
+  - {fileID: 11400000, guid: a57aee7e5bd349cea9d62741326f7f1a, type: 2}
+  - {fileID: 11400000, guid: 9ab5ad3fb4c84ab99ceed4b13372a67f, type: 2}
+  - {fileID: 11400000, guid: eb7d2a2a75324cc091942bfe814222b8, type: 2}
   startingMaxHp: 50
-  stage1Encounter: {fileID: 11400000, guid: f7c86fb8718f7ec47b10d0213ef7d977, type: 2}
-  stage2Encounter: {fileID: 11400000, guid: 757dd00b2967bfe45a80321ba4573cd0, type: 2}
+  stage1Encounter: {fileID: 11400000, guid: 80304f8944dd4ad59a38e228fa7b3e4a, type: 2}
+  stage2Encounter: {fileID: 11400000, guid: 5b7c9bc7bcae4162bdc49ad29442c369, type: 2}
   bossEncounter: {fileID: 11400000, guid: 3dc8f245f65fc6b49b9b5ef3ff6ccbee, type: 2}
 --- !u!114 &1301587810
 MonoBehaviour:

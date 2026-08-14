@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Shared HP and block. Player and Enemy compose this instead of duplicating rules.
+/// Shared HP, block, and statuses. Player and Enemy compose this instead of duplicating rules.
 /// </summary>
 public class Combatant : IEffectTarget
 {
@@ -9,19 +9,20 @@ public class Combatant : IEffectTarget
     public int MaxHp { get; private set; }
     public int Block { get; private set; }
     public bool IsAlive => Hp > 0;
+    public StatusBag Statuses { get; } = new StatusBag();
 
     public void Initialize(int maxHp)
     {
         MaxHp = Mathf.Max(1, maxHp);
         Hp = MaxHp;
         Block = 0;
+        Statuses.Clear();
     }
 
-public void SetHp(int hp)
+    public void SetHp(int hp)
     {
         Hp = Mathf.Clamp(hp, 0, MaxHp);
     }
-
 
     public void ClearBlock()
     {
