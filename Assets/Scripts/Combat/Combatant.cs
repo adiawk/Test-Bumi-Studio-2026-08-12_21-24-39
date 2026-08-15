@@ -52,4 +52,15 @@ public class Combatant : IEffectTarget
         if (amount > 0)
             Hp = Mathf.Min(MaxHp, Hp + amount);
     }
+
+    public void ApplyStatus(StatusId id, int stacks)
+    {
+        if (id == StatusId.StartBlock)
+        {
+            GainBlock(stacks);
+            return;
+        }
+
+        Statuses.Apply(id, stacks);
+    }
 }

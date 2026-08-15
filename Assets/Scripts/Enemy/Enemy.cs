@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -12,6 +13,7 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
     bool nextIsAttack = true;
     CharacterVisual visual;
     CharacterFeedback feedback;
+    bool hidingDeadVisual;
 
     public int Hp => body.Hp;
     public int MaxHp => body.MaxHp;
@@ -19,7 +21,7 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
     public bool IsAlive => body.IsAlive;
     public StatusBag Statuses => body.Statuses;
     public EnemyIntent CurrentIntent { get; private set; }
-    public string IntentLabel => CurrentIntent.Label;
+    public string IntentLabel => Statuses.GetStacks(StatusId.Stun) > 0 ? "Stunned" : CurrentIntent.Label;
     public string DisplayName => data != null ? data.DisplayName : "Enemy";
     public CharacterVisual Visual => visual;
 
@@ -60,17 +62,14 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
 
     public void ApplyStatus(StatusId id, int stacks)
     {
-        if (id == StatusId.StartBlock)
-        {
-            GainBlock(stacks);
-            return;
-        }
-
-        Statuses.Apply(id, stacks);
+        body.ApplyStatus(id, stacks);
     }
 
     public void ExecuteIntent(IEffectTarget player)
     {
+        if (Statuses.GetStacks(StatusId.Stun) > 0)
+            return;
+
         if (CurrentIntent.Type == IntentType.Attack)
         {
             if (feedback != null)
@@ -131,7 +130,23 @@ public class Enemy : MonoBehaviour, IEffectTarget, ICombatFeedback
     {
         if (visual != null)
             visual.SetAlive(IsAlive);
-        if (!IsAlive && feedback != null)
+        if (IsAlive)
+            return;
+
+        if (feedback != null)
             feedback.PlayDeathFeedback();
+        if (hidingDeadVisual)
+            return;
+
+        hidingDeadVisual = true;
+        StartCoroutine(HideVisualAfterDeath());
+    }
+
+    IEnumerator HideVisualAfterDeath()
+    {
+        float delay = feedback != null ? feedback.DeathHideDelay : 0.4f;
+        yield return new WaitForSeconds(delay);
+        if (visual != null)
+            visual.HideBody();
     }
 }

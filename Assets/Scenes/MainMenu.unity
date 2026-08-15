@@ -730,6 +730,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a57aee7e5bd349cea9d62741326f7f1a, type: 2}
   - {fileID: 11400000, guid: 9ab5ad3fb4c84ab99ceed4b13372a67f, type: 2}
   - {fileID: 11400000, guid: eb7d2a2a75324cc091942bfe814222b8, type: 2}
+  - {fileID: 11400000, guid: c4ea71d06dbf9a2e5c8b7d4f9a3e0b67, type: 2}
+  - {fileID: 11400000, guid: d5fb82e17ec0ab3f6d9c8e5a0b4f1c78, type: 2}
   startingMaxHp: 50
   stage1Encounter: {fileID: 11400000, guid: 80304f8944dd4ad59a38e228fa7b3e4a, type: 2}
   stage2Encounter: {fileID: 11400000, guid: 5b7c9bc7bcae4162bdc49ad29442c369, type: 2}

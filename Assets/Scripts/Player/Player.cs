@@ -70,19 +70,13 @@ public class Player : MonoBehaviour, IEffectTarget, ICombatFeedback
 
     public void ApplyStatus(StatusId id, int stacks)
     {
-        if (id == StatusId.StartBlock)
-        {
-            GainBlock(stacks);
-            return;
-        }
-
         if (id == StatusId.ExtraEnergy)
         {
             AddMaxEnergy(stacks);
             return;
         }
 
-        Statuses.Apply(id, stacks);
+        body.ApplyStatus(id, stacks);
     }
 
     public void ClearBlock()

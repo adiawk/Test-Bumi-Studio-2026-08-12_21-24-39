@@ -7,5 +7,7 @@ public enum StatusId
     Weak,
     Vulnerable,
     StartBlock,
-    ExtraEnergy
+    ExtraEnergy,
+    Stun,
+    VulnerableNext
 }

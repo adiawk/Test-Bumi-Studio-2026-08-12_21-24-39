@@ -3,5 +3,6 @@ public enum MapNodeType
     Combat,
     Elite,
     Reward,
-    Boss
+    Boss,
+    Shop
 }

@@ -36,7 +36,10 @@ public class TurnManager : MonoBehaviour
         {
             player.ClearBlock();
             player.ResetEnergy();
+            player.Statuses.ActivateDelayedStatuses();
         }
+
+        ActivateEnemyDelayedStatuses();
 
         if (deckManager != null)
             deckManager.DrawCards(cardsPerTurn);
@@ -48,6 +51,9 @@ public class TurnManager : MonoBehaviour
             yield break;
 
         CurrentPhase = TurnPhase.EnemyTurn;
+
+        if (player != null)
+            player.Statuses.ExpireTimedStatuses();
 
         if (deckManager != null)
             deckManager.DiscardHand();
@@ -64,11 +70,25 @@ public class TurnManager : MonoBehaviour
             enemy.ClearBlock();
             enemy.ExecuteIntent(player);
             enemy.ChooseNextIntent();
+            enemy.Statuses.ExpireTimedStatuses();
 
             yield return new WaitForSeconds(delayBetweenEnemyActions);
 
             if (player != null && !player.IsAlive)
                 break;
+        }
+    }
+
+    void ActivateEnemyDelayedStatuses()
+    {
+        if (enemies == null)
+            return;
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            Enemy enemy = enemies[i];
+            if (enemy != null && enemy.IsAlive)
+                enemy.Statuses.ActivateDelayedStatuses();
         }
     }
 }

@@ -46,12 +46,12 @@ public class GameManager : MonoBehaviour
             return;
 
         EncounterData encounter = node.Encounter;
-        if (encounter == null && node.NodeType != MapNodeType.Reward)
+        if (encounter == null && !IsVisitNode(node.NodeType))
             encounter = runManager.GetEncounterForNodeType(node.NodeType);
 
         runManager.Stages.SelectNode(node.NodeId, node.NodeType, encounter);
 
-        if (node.NodeType == MapNodeType.Reward)
+        if (IsVisitNode(node.NodeType))
             LoadReward();
         else
             LoadCombat();
@@ -90,6 +90,24 @@ public class GameManager : MonoBehaviour
             runManager.Stages.CompleteSelectedNode();
         }
         LoadMap();
+    }
+
+    public void NotifyShopPurchase(RewardData reward)
+    {
+        if (runManager != null)
+            runManager.TryApplyReward(reward);
+    }
+
+    public void NotifyShopClosed()
+    {
+        if (runManager != null)
+            runManager.Stages.CompleteSelectedNode();
+        LoadMap();
+    }
+
+    static bool IsVisitNode(MapNodeType nodeType)
+    {
+        return nodeType == MapNodeType.Reward || nodeType == MapNodeType.Shop;
     }
 
     public void LoadMainMenu() => LoadScene(SceneNames.MainMenu);

@@ -52,6 +52,30 @@ public class StatusBag
         return amount;
     }
 
+    public void ActivateDelayedStatuses()
+    {
+        int pending = GetStacks(StatusId.VulnerableNext);
+        if (pending <= 0)
+            return;
+
+        Apply(StatusId.VulnerableNext, -pending);
+        int current = GetStacks(StatusId.Vulnerable);
+        if (current > 0)
+            Apply(StatusId.Vulnerable, -current);
+        Apply(StatusId.Vulnerable, 1);
+    }
+
+    public void ExpireTimedStatuses()
+    {
+        int vulnerable = GetStacks(StatusId.Vulnerable);
+        if (vulnerable > 0)
+            Apply(StatusId.Vulnerable, -vulnerable);
+
+        int stun = GetStacks(StatusId.Stun);
+        if (stun > 0)
+            Apply(StatusId.Stun, -1);
+    }
+
     public string BuildLabel()
     {
         if (stacks.Count == 0)
@@ -62,10 +86,24 @@ public class StatusBag
         {
             if (pair.Value <= 0)
                 continue;
-            parts.Add(ShortName(pair.Key) + pair.Value);
+
+            string label = StatusLabel(pair.Key, pair.Value);
+            if (!string.IsNullOrEmpty(label))
+                parts.Add(label);
         }
 
         return parts.Count == 0 ? string.Empty : string.Join(" ", parts);
+    }
+
+    static string StatusLabel(StatusId id, int stacks)
+    {
+        switch (id)
+        {
+            case StatusId.Vulnerable: return "Vuln";
+            case StatusId.VulnerableNext: return "Vuln next";
+            case StatusId.Stun: return "Stn";
+            default: return ShortName(id) + stacks;
+        }
     }
 
     static string ShortName(StatusId id)
@@ -77,6 +115,8 @@ public class StatusBag
             case StatusId.Vulnerable: return "Vuln";
             case StatusId.StartBlock: return "Blk";
             case StatusId.ExtraEnergy: return "En";
+            case StatusId.Stun: return "Stn";
+            case StatusId.VulnerableNext: return "Vuln next";
             default: return id.ToString();
         }
     }
