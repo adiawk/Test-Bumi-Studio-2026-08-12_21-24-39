@@ -15,7 +15,10 @@ public override void Resolve(EffectContext context)
         if (context == null || context.Source == null)
             return;
 
-        context.Source.GainBlock(amount);
+        int block = amount;
+        if (context.Card != null)
+            block += context.Card.BlockBonus;
+        context.Source.GainBlock(block);
         ICombatFeedback feedback = context.Source as ICombatFeedback;
         if (feedback != null)
             feedback.PlayBlockFeedback();

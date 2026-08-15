@@ -454,7 +454,7 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        card.Resolve(new EffectContext(player, target, deckManager));
+        card.Resolve(new EffectContext(player, target, deckManager, card));
         deckManager.Discard(card);
         EnsureValidSelection();
         FinishIfOver();

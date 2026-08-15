@@ -7,11 +7,13 @@ public sealed class EffectContext
     public IEffectTarget Source { get; }
     public IEffectTarget Target { get; }
     public ICardDrawer Drawer { get; }
+    public RuntimeCard Card { get; }
 
-    public EffectContext(IEffectTarget source, IEffectTarget target, ICardDrawer drawer)
+    public EffectContext(IEffectTarget source, IEffectTarget target, ICardDrawer drawer, RuntimeCard card = null)
     {
         Source = source;
         Target = target;
         Drawer = drawer;
+        Card = card;
     }
 }

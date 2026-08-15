@@ -6,6 +6,7 @@ using UnityEngine.UI;
 /// <summary>
 /// Reward: pick one offer and return to the map.
 /// Shop: click cards or heals as many times as you want, then Leave.
+/// Upgrade: click run-deck damage/block cards for +2, then Leave.
 /// </summary>
 public class RewardUI : MonoBehaviour
 {
@@ -15,24 +16,35 @@ public class RewardUI : MonoBehaviour
     [SerializeField] Button continueButton;
     readonly RewardData[] offered = new RewardData[3];
     bool isShop;
+    bool isUpgrade;
     TextMeshProUGUI titleText;
 
     void Start()
     {
         RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
-        isShop = run != null && run.Stages.SelectedNodeType == MapNodeType.Shop;
+        MapNodeType nodeType = run != null ? run.Stages.SelectedNodeType : MapNodeType.Reward;
+        isShop = nodeType == MapNodeType.Shop;
+        isUpgrade = nodeType == MapNodeType.Upgrade;
         titleText = FindTitleText();
 
+        bool showLeave = isShop || isUpgrade;
         if (continueButton != null)
         {
-            continueButton.gameObject.SetActive(isShop);
+            continueButton.gameObject.SetActive(showLeave);
             continueButton.onClick.AddListener(OnContinueClicked);
-            if (isShop)
+            if (showLeave)
             {
                 TextMeshProUGUI leaveLabel = continueButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (leaveLabel != null)
                     leaveLabel.text = "Leave";
             }
+        }
+
+        if (isUpgrade)
+        {
+            OfferUpgrades();
+            RefreshTitle();
+            return;
         }
 
         if (isShop)
@@ -67,6 +79,87 @@ public class RewardUI : MonoBehaviour
         offered[2] = TakeRandom(heals);
         if (offered[2] == null)
             offered[2] = TakeRandom(cards);
+    }
+
+    void OfferUpgrades()
+    {
+        SetOfferButtonsActive(false);
+        if (cardChoice1Button == null)
+            return;
+
+        RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
+        IReadOnlyList<RuntimeCard> deck = run != null ? run.RunDeck : null;
+
+        RectTransform grid = CreateUpgradeGrid();
+        if (deck == null)
+            return;
+
+        for (int i = 0; i < deck.Count; i++)
+        {
+            RuntimeCard card = deck[i];
+            if (card == null || !card.CanUpgrade)
+                continue;
+
+            Button clone = Object.Instantiate(cardChoice1Button, grid);
+            clone.gameObject.SetActive(true);
+            clone.interactable = true;
+            BindUpgradeCard(clone, card);
+        }
+    }
+
+    RectTransform CreateUpgradeGrid()
+    {
+        var root = new GameObject("UpgradeGrid", typeof(RectTransform), typeof(GridLayoutGroup));
+        root.transform.SetParent(transform, false);
+
+        RectTransform rt = root.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(0f, 10f);
+        rt.sizeDelta = new Vector2(920f, 520f);
+
+        GridLayoutGroup grid = root.GetComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(200f, 200f);
+        grid.spacing = new Vector2(16f, 16f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 3;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        return rt;
+    }
+
+    void BindUpgradeCard(Button button, RuntimeCard card)
+    {
+        RefreshUpgradeLabel(button, card);
+        button.onClick.RemoveAllListeners();
+        RuntimeCard captured = card;
+        button.onClick.AddListener(() =>
+        {
+            captured.Upgrade();
+            RefreshUpgradeLabel(button, captured);
+        });
+    }
+
+    static void RefreshUpgradeLabel(Button button, RuntimeCard card)
+    {
+        if (button == null || card == null)
+            return;
+
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (label != null)
+            label.text = card.Name + "\n" + card.Cost + " energy\n" + card.Description;
+    }
+
+    void SetOfferButtonsActive(bool active)
+    {
+        if (cardChoice1Button != null)
+            cardChoice1Button.gameObject.SetActive(active);
+        if (cardChoice2Button != null)
+            cardChoice2Button.gameObject.SetActive(active);
+        if (cardChoice3Button != null)
+            cardChoice3Button.gameObject.SetActive(active);
     }
 
     static List<RewardData> CopyPool()
@@ -153,6 +246,12 @@ public class RewardUI : MonoBehaviour
         if (titleText == null)
             return;
 
+        if (isUpgrade)
+        {
+            titleText.text = "Upgrade";
+            return;
+        }
+
         if (!isShop)
         {
             titleText.text = "Choose a Card";
@@ -185,9 +284,9 @@ public class RewardUI : MonoBehaviour
             return;
         }
 
-        if (isShop)
+        if (isShop || isUpgrade)
         {
-            GameManager.Instance.NotifyShopClosed();
+            GameManager.Instance.CompleteVisit();
             return;
         }
 

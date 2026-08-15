@@ -85,7 +85,12 @@ public class UICard : MonoBehaviour,
     {
         card = runtimeCard;
         combatManager = combat;
-        SetCard(runtimeCard != null ? runtimeCard.Data : null);
+        if (cardNameText != null)
+            cardNameText.text = runtimeCard != null ? runtimeCard.Name : string.Empty;
+        if (cardDescriptionText != null)
+            cardDescriptionText.text = runtimeCard != null ? runtimeCard.Description : string.Empty;
+        if (cardEnergyCostText != null)
+            cardEnergyCostText.text = runtimeCard != null ? runtimeCard.Cost.ToString() : string.Empty;
 
         EnsureVisual();
         if (button == null)

@@ -17,9 +17,9 @@ public class RunManager : MonoBehaviour
     [SerializeField] EncounterData stage2Encounter;
     [SerializeField] EncounterData bossEncounter;
 
-    readonly List<CardData> runDeck = new List<CardData>();
+    readonly List<RuntimeCard> runDeck = new List<RuntimeCard>();
 
-    public IReadOnlyList<CardData> RunDeck => runDeck;
+    public IReadOnlyList<RuntimeCard> RunDeck => runDeck;
     public IReadOnlyList<RewardData> RewardPool => rewardPool;
     public int CurrentHp { get; private set; }
     public int MaxHp { get; private set; }
@@ -57,7 +57,7 @@ public class RunManager : MonoBehaviour
             for (int i = 0; i < starterDeck.Count; i++)
             {
                 if (starterDeck[i] != null)
-                    runDeck.Add(starterDeck[i]);
+                    runDeck.Add(new RuntimeCard(starterDeck[i]));
             }
         }
         stageManager.ResetToStart();
@@ -84,7 +84,7 @@ public class RunManager : MonoBehaviour
     public void AddCardToRunDeck(CardData card)
     {
         if (card != null)
-            runDeck.Add(card);
+            runDeck.Add(new RuntimeCard(card));
     }
 
     public void QueueNextCombatModifier(StatusId status, int stacks, bool applyToPlayer)

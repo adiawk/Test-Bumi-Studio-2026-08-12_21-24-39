@@ -16,6 +16,8 @@ public override void Resolve(EffectContext context)
             return;
 
         int damage = amount;
+        if (context.Card != null)
+            damage += context.Card.DamageBonus;
         Player sourcePlayer = context.Source as Player;
         if (sourcePlayer != null)
             damage = sourcePlayer.Statuses.ModifyOutgoingAttack(damage);

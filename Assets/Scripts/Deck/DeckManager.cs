@@ -19,10 +19,28 @@ public class DeckManager : MonoBehaviour, ICardDrawer
 
     public void SetupCombatDeck()
     {
-        SetupCombatDeck(startingCards);
+        SetupCombatDeckFromData(startingCards);
     }
 
-    public void SetupCombatDeck(IReadOnlyList<CardData> cards)
+    public void SetupCombatDeck(IReadOnlyList<RuntimeCard> cards)
+    {
+        drawPile.Clear();
+        hand.Clear();
+        discardPile.Clear();
+
+        if (cards == null)
+            return;
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            if (cards[i] != null)
+                drawPile.Add(cards[i]);
+        }
+
+        Shuffle(drawPile);
+    }
+
+    public void SetupCombatDeckFromData(IReadOnlyList<CardData> cards)
     {
         drawPile.Clear();
         hand.Clear();

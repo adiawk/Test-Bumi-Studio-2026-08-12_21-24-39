@@ -4,5 +4,6 @@ public enum MapNodeType
     Elite,
     Reward,
     Boss,
-    Shop
+    Shop,
+    Upgrade
 }

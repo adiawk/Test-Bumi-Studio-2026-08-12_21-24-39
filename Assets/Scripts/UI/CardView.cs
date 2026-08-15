@@ -61,7 +61,7 @@ void OnClicked()
 
         AddLabel(root.transform, "Cost", "Cost " + runtimeCard.Cost, new Vector2(0, 80), 18);
         AddLabel(root.transform, "Name", runtimeCard.Name, new Vector2(0, 40), 20);
-        string description = runtimeCard.Data != null ? runtimeCard.Data.Description : string.Empty;
+        string description = runtimeCard != null ? runtimeCard.Description : string.Empty;
         AddLabel(root.transform, "Desc", description, new Vector2(0, -30), 16);
 
         root.GetComponent<CardView>().Bind(runtimeCard, combat);

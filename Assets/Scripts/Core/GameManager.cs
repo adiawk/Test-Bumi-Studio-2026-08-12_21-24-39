@@ -100,6 +100,11 @@ public class GameManager : MonoBehaviour
 
     public void NotifyShopClosed()
     {
+        CompleteVisit();
+    }
+
+    public void CompleteVisit()
+    {
         if (runManager != null)
             runManager.Stages.CompleteSelectedNode();
         LoadMap();
@@ -107,7 +112,7 @@ public class GameManager : MonoBehaviour
 
     static bool IsVisitNode(MapNodeType nodeType)
     {
-        return nodeType == MapNodeType.Reward || nodeType == MapNodeType.Shop;
+        return nodeType == MapNodeType.Reward || nodeType == MapNodeType.Shop || nodeType == MapNodeType.Upgrade;
     }
 
     public void LoadMainMenu() => LoadScene(SceneNames.MainMenu);
