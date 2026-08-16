@@ -10,11 +10,12 @@ using UnityEngine.UI;
 /// </summary>
 public class RewardUI : MonoBehaviour
 {
-    [SerializeField] Button cardChoice1Button;
-    [SerializeField] Button cardChoice2Button;
-    [SerializeField] Button cardChoice3Button;
+    [SerializeField] Transform rewardRoot;
+    [SerializeField] Transform offerGrid;
+    [SerializeField] UICard cardPrefab;
     [SerializeField] Button continueButton;
     readonly RewardData[] offered = new RewardData[3];
+    readonly List<Button> choiceButtons = new List<Button>();
     readonly List<Button> upgradeButtons = new List<Button>();
     bool isShop;
     bool isUpgrade;
@@ -43,6 +44,8 @@ public class RewardUI : MonoBehaviour
 
         if (isUpgrade)
         {
+            SetRoot(rewardRoot, false);
+            SetRoot(offerGrid, true);
             OfferUpgrades();
             RefreshUpgradeAffordability();
             RefreshTitle();
@@ -50,21 +53,30 @@ public class RewardUI : MonoBehaviour
         }
 
         if (isShop)
+        {
+            SetRoot(rewardRoot, false);
+            SetRoot(offerGrid, true);
             OfferShop();
-        else
-            OfferRewards();
-
-        BindChoice(cardChoice1Button, 0);
-        BindChoice(cardChoice2Button, 1);
-        BindChoice(cardChoice3Button, 2);
-        if (isShop)
+            SpawnChoices(offerGrid);
             RefreshShopAffordability();
+        }
+        else
+        {
+            SetRoot(rewardRoot, true);
+            SetRoot(offerGrid, false);
+            OfferRewards();
+            SpawnChoices(rewardRoot);
+        }
+
         RefreshTitle();
     }
 
     void OfferRewards()
     {
         List<RewardData> pool = CopyPool();
+        if (TryOfferExact(pool))
+            return;
+
         for (int i = 0; i < 3; i++)
         {
             offered[i] = pool.Count == 0 ? null : pool[Random.Range(0, pool.Count)];
@@ -75,6 +87,10 @@ public class RewardUI : MonoBehaviour
 
     void OfferShop()
     {
+        List<RewardData> pool = CopyPool();
+        if (TryOfferExact(pool))
+            return;
+
         List<RewardData> cards = CopyPool(RewardKind.Card);
         List<RewardData> heals = CopyPool(RewardKind.HealRun);
 
@@ -85,17 +101,67 @@ public class RewardUI : MonoBehaviour
             offered[2] = TakeRandom(cards);
     }
 
+    bool TryOfferExact(List<RewardData> pool)
+    {
+        if (pool.Count == 0 || pool.Count > 3)
+            return false;
+
+        for (int i = 0; i < 3; i++)
+            offered[i] = i < pool.Count ? pool[i] : null;
+        return true;
+    }
+
+    void SpawnChoices(Transform parent)
+    {
+        choiceButtons.Clear();
+        if (parent == null)
+            return;
+
+        List<Button> cards = CollectCardButtons(parent);
+        if (cards.Count != 3)
+        {
+            ClearChildren(parent);
+            cards.Clear();
+            for (int i = 0; i < 3; i++)
+            {
+                Button card = SpawnCard(parent);
+                if (card != null)
+                    cards.Add(card);
+            }
+        }
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            BindChoice(cards[i], i);
+            choiceButtons.Add(cards[i]);
+        }
+    }
+
+    static List<Button> CollectCardButtons(Transform parent)
+    {
+        var cards = new List<Button>();
+        if (parent == null)
+            return cards;
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Button button = parent.GetChild(i).GetComponent<Button>();
+            if (button != null)
+                cards.Add(button);
+        }
+
+        return cards;
+    }
+
     void OfferUpgrades()
     {
-        SetOfferButtonsActive(false);
         upgradeButtons.Clear();
-        if (cardChoice1Button == null)
+        ClearChildren(offerGrid);
+        if (cardPrefab == null || offerGrid == null)
             return;
 
         RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
         IReadOnlyList<RuntimeCard> deck = run != null ? run.RunDeck : null;
-
-        RectTransform grid = CreateUpgradeGrid();
         if (deck == null)
             return;
 
@@ -105,34 +171,23 @@ public class RewardUI : MonoBehaviour
             if (card == null || !card.CanUpgrade)
                 continue;
 
-            Button clone = Object.Instantiate(cardChoice1Button, grid);
-            clone.gameObject.SetActive(true);
+            Button clone = SpawnCard(offerGrid);
+            if (clone == null)
+                continue;
+
             BindUpgradeCard(clone, card);
             upgradeButtons.Add(clone);
         }
     }
 
-    RectTransform CreateUpgradeGrid()
+    Button SpawnCard(Transform parent)
     {
-        var root = new GameObject("UpgradeGrid", typeof(RectTransform), typeof(GridLayoutGroup));
-        root.transform.SetParent(transform, false);
+        if (cardPrefab == null || parent == null)
+            return null;
 
-        RectTransform rt = root.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.5f, 0.5f);
-        rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = new Vector2(0f, 10f);
-        rt.sizeDelta = new Vector2(920f, 520f);
-
-        GridLayoutGroup grid = root.GetComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(200f, 200f);
-        grid.spacing = new Vector2(16f, 16f);
-        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = 3;
-        grid.childAlignment = TextAnchor.UpperCenter;
-        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
-        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
-        return rt;
+        UICard view = Instantiate(cardPrefab, parent);
+        view.gameObject.SetActive(true);
+        return view.Button;
     }
 
     void BindUpgradeCard(Button button, RuntimeCard card)
@@ -159,13 +214,9 @@ public class RewardUI : MonoBehaviour
         if (button == null || card == null)
             return;
 
-        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
-        if (label == null)
-            return;
-
         RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
         int cost = run != null ? run.UpgradeCoinCost : 0;
-        label.text = card.Name + "\n" + card.Cost + " energy\n" + card.Description + "\n" + cost + " Coins";
+        ApplyCardLabel(button, card.Name, card.Cost.ToString(), card.Description, cost + " Coins");
     }
 
     void RefreshUpgradeAffordability()
@@ -178,16 +229,6 @@ public class RewardUI : MonoBehaviour
             if (upgradeButtons[i] != null)
                 upgradeButtons[i].interactable = coins >= cost;
         }
-    }
-
-    void SetOfferButtonsActive(bool active)
-    {
-        if (cardChoice1Button != null)
-            cardChoice1Button.gameObject.SetActive(active);
-        if (cardChoice2Button != null)
-            cardChoice2Button.gameObject.SetActive(active);
-        if (cardChoice3Button != null)
-            cardChoice3Button.gameObject.SetActive(active);
     }
 
     static List<RewardData> CopyPool()
@@ -204,7 +245,7 @@ public class RewardUI : MonoBehaviour
     {
         var pool = new List<RewardData>();
         RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
-        IReadOnlyList<RewardData> source = run != null ? run.RewardPool : null;
+        IReadOnlyList<RewardData> source = ResolvePool(run);
         if (source == null)
             return pool;
 
@@ -219,6 +260,18 @@ public class RewardUI : MonoBehaviour
         }
 
         return pool;
+    }
+
+    static IReadOnlyList<RewardData> ResolvePool(RunManager run)
+    {
+        if (run == null)
+            return null;
+
+        IReadOnlyList<RewardData> nodePool = run.Stages.SelectedRewardPool;
+        if (nodePool != null && nodePool.Count > 0)
+            return nodePool;
+
+        return run.RewardPool;
     }
 
     static RewardData TakeRandom(List<RewardData> pool)
@@ -237,11 +290,11 @@ public class RewardUI : MonoBehaviour
         if (button == null)
             return;
 
-        bool hasReward = offered[index] != null;
+        RewardData reward = offered[index];
+        bool hasReward = reward != null;
         button.interactable = hasReward;
-        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
-        if (label != null && hasReward)
-            label.text = isShop ? offered[index].ShopOfferLabel : offered[index].OfferLabel;
+        if (hasReward)
+            ApplyOfferLabel(button, reward, isShop);
 
         int captured = index;
         button.onClick.RemoveAllListeners();
@@ -279,14 +332,7 @@ public class RewardUI : MonoBehaviour
 
         if (isUpgrade)
         {
-            RunManager upgradeRun = GameManager.Instance != null ? GameManager.Instance.Run : null;
-            if (upgradeRun == null)
-            {
-                titleText.text = "Upgrade";
-                return;
-            }
-
-            titleText.text = "Upgrade  Coins " + upgradeRun.Coins;
+            titleText.text = "Upgrade";
             return;
         }
 
@@ -296,21 +342,13 @@ public class RewardUI : MonoBehaviour
             return;
         }
 
-        RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
-        if (run == null)
-        {
-            titleText.text = "Shop";
-            return;
-        }
-
-        titleText.text = "Shop  HP " + run.CurrentHp + "/" + run.MaxHp + "  Coins " + run.Coins;
+        titleText.text = "Shop";
     }
 
     void RefreshShopAffordability()
     {
-        RefreshChoiceAffordability(cardChoice1Button, 0);
-        RefreshChoiceAffordability(cardChoice2Button, 1);
-        RefreshChoiceAffordability(cardChoice3Button, 2);
+        for (int i = 0; i < choiceButtons.Count; i++)
+            RefreshChoiceAffordability(choiceButtons[i], i);
     }
 
     void RefreshChoiceAffordability(Button button, int index)
@@ -318,7 +356,7 @@ public class RewardUI : MonoBehaviour
         if (button == null)
             return;
 
-        RewardData reward = offered[index];
+        RewardData reward = index >= 0 && index < offered.Length ? offered[index] : null;
         if (reward == null)
         {
             button.interactable = false;
@@ -328,6 +366,59 @@ public class RewardUI : MonoBehaviour
         RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
         int coins = run != null ? run.Coins : 0;
         button.interactable = coins >= reward.CoinCost;
+    }
+
+    static void ApplyOfferLabel(Button button, RewardData reward, bool shop)
+    {
+        if (reward == null)
+            return;
+
+        string energy = reward.Kind == RewardKind.Card && reward.Card != null
+            ? reward.Card.Cost.ToString()
+            : string.Empty;
+        string extra = shop ? reward.CoinCost + " Coins" : null;
+        ApplyCardLabel(button, reward.DisplayName, energy, reward.Description, extra);
+    }
+
+    static void ApplyCardLabel(Button button, string displayName, string energy, string description, string extra)
+    {
+        if (button == null)
+            return;
+
+        UICard view = button.GetComponent<UICard>();
+        if (view != null)
+        {
+            view.BindOffer(displayName, description, energy, extra);
+            return;
+        }
+
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (label == null)
+            return;
+
+        string text = displayName ?? string.Empty;
+        if (!string.IsNullOrEmpty(energy))
+            text += "\n" + energy + " energy";
+        if (!string.IsNullOrEmpty(description))
+            text += "\n" + description;
+        if (!string.IsNullOrEmpty(extra))
+            text += "\n" + extra;
+        label.text = text;
+    }
+
+    static void SetRoot(Transform root, bool active)
+    {
+        if (root != null)
+            root.gameObject.SetActive(active);
+    }
+
+    static void ClearChildren(Transform parent)
+    {
+        if (parent == null)
+            return;
+
+        for (int i = parent.childCount - 1; i >= 0; i--)
+            Destroy(parent.GetChild(i).gameObject);
     }
 
     TextMeshProUGUI FindTitleText()

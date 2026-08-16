@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [SerializeField] RunManager runManager;
+    [SerializeField] RunHud runHudPrefab;
 
     public RunManager Run => runManager;
 
@@ -23,6 +24,21 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        SpawnRunHud();
+    }
+
+    void SpawnRunHud()
+    {
+        if (GetComponentInChildren<RunHud>(true) != null)
+            return;
+        if (runHudPrefab == null)
+        {
+            Debug.LogError("[GameManager] RunHud prefab is missing.");
+            return;
+        }
+
+        RunHud hud = Instantiate(runHudPrefab, transform);
+        hud.name = "RunHud";
     }
 
     void OnDestroy()
@@ -49,7 +65,7 @@ public class GameManager : MonoBehaviour
         if (encounter == null && !IsVisitNode(node.NodeType))
             encounter = runManager.GetEncounterForNodeType(node.NodeType);
 
-        runManager.Stages.SelectNode(node.NodeId, node.NodeType, encounter);
+        runManager.Stages.SelectNode(node.NodeId, node.NodeType, encounter, node.RewardPool);
 
         if (IsVisitNode(node.NodeType))
             LoadReward();

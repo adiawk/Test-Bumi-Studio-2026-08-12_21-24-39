@@ -624,6 +624,30 @@ public class CombatManager : MonoBehaviour
             GameManager.Instance.Run.SetHp(player.Hp);
     }
 
+    public void DebugKillPlayer()
+    {
+        if (!IsCombatActive || player == null)
+            return;
+
+        player.TakeDamage(player.Hp + player.Block);
+        FinishIfOver();
+    }
+
+    public void DebugKillAllEnemies()
+    {
+        if (!IsCombatActive)
+            return;
+
+        for (int i = 0; i < spawnedEnemies.Count; i++)
+        {
+            Enemy enemy = spawnedEnemies[i];
+            if (enemy != null && enemy.IsAlive)
+                enemy.TakeDamage(enemy.Hp + enemy.Block);
+        }
+
+        FinishIfOver();
+    }
+
     public void EndCombat()
     {
         IsCombatActive = false;

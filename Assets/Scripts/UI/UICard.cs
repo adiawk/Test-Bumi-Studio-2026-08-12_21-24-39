@@ -71,6 +71,16 @@ public class UICard : MonoBehaviour,
     LayoutElement layoutElement;
     CanvasGroup canvasGroup;
 
+    public Button Button
+    {
+        get
+        {
+            if (button == null)
+                button = GetComponent<Button>();
+            return button;
+        }
+    }
+
     public void SetCard(CardData cardData)
     {
         if (cardNameText != null)
@@ -79,6 +89,24 @@ public class UICard : MonoBehaviour,
             cardDescriptionText.text = cardData != null ? cardData.Description : string.Empty;
         if (cardEnergyCostText != null)
             cardEnergyCostText.text = cardData != null ? cardData.Cost.ToString() : string.Empty;
+    }
+
+    public void BindOffer(string displayName, string description, string energyCost, string extraLine = null)
+    {
+        card = null;
+        combatManager = null;
+
+        if (cardNameText != null)
+            cardNameText.text = displayName ?? string.Empty;
+
+        string body = description ?? string.Empty;
+        if (!string.IsNullOrEmpty(extraLine))
+            body = string.IsNullOrEmpty(body) ? extraLine : body + "\n" + extraLine;
+        if (cardDescriptionText != null)
+            cardDescriptionText.text = body;
+
+        if (cardEnergyCostText != null)
+            cardEnergyCostText.text = energyCost ?? string.Empty;
     }
 
     public void Bind(RuntimeCard runtimeCard, CombatManager combat)
