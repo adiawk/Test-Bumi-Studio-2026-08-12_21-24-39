@@ -23,6 +23,12 @@ public class CharacterFeedback : MonoBehaviour
     [SerializeField] VfxOneShot hitPrefab;
     [SerializeField] VfxOneShot blockPrefab;
     [SerializeField] VfxOneShot healPrefab;
+    [SerializeField] DamagePopup damagePopupPrefab;
+
+    [Header("Damage popup")]
+    [SerializeField] float mixedHitDelay = 0.2f;
+    [SerializeField] Vector3 damagePopupOffset = new Vector3(0f, 1.15f, 0f);
+    [SerializeField] float damagePopupJitter = 0.18f;
 
     [Header("Dummy / override sprites")]
     [SerializeField] Sprite hitSprite;
@@ -41,6 +47,9 @@ public class CharacterFeedback : MonoBehaviour
     [SerializeField] float deathHideDelay = 0.4f;
 
     public float DeathHideDelay => Mathf.Max(shakeDuration, deathHideDelay);
+
+    static readonly Color DamageRed = new Color(1f, 0.18f, 0.12f, 1f);
+    static readonly Color BlockBlue = new Color(0.22f, 0.55f, 1f, 1f);
 
     Coroutine shakeRoutine;
     Vector3 visualRest = Vector3.zero;
@@ -84,15 +93,30 @@ public class CharacterFeedback : MonoBehaviour
 
     public void PlayHitFeedback()
     {
-        PlayAnim(hitTrigger);
-        Spawn(hitPrefab, hitSprite, hitSfx, new Color(1f, 0.35f, 0.3f, 1f), 45f);
-        Shake();
+        PlayHpHit(0);
+    }
+
+    public void PlayIncomingHit(int blocked, int hpDamage)
+    {
+        if (blocked <= 0 && hpDamage <= 0)
+            return;
+
+        if (blocked > 0)
+            PlayBlockedHit(blocked);
+
+        if (hpDamage <= 0)
+            return;
+
+        if (blocked > 0 && isActiveAndEnabled)
+            StartCoroutine(PlayHpHitAfterDelay(hpDamage));
+        else
+            PlayHpHit(hpDamage);
     }
 
     public void PlayBlockFeedback()
     {
         PlayAnim(blockTrigger);
-        Spawn(blockPrefab, blockSprite, blockSfx, new Color(0.35f, 0.7f, 1f, 0.95f), 0f);
+        Spawn(blockPrefab, blockSprite, blockSfx, BlockBlue, 0f);
     }
 
     public void PlayHealFeedback()
@@ -107,6 +131,40 @@ public class CharacterFeedback : MonoBehaviour
             return;
         died = true;
         PlayAnim(dieTrigger);
+    }
+
+    IEnumerator PlayHpHitAfterDelay(int amount)
+    {
+        yield return new WaitForSeconds(Mathf.Max(0f, mixedHitDelay));
+        PlayHpHit(amount);
+    }
+
+    void PlayBlockedHit(int amount)
+    {
+        PlayAnim(blockTrigger);
+        Spawn(blockPrefab, blockSprite, blockSfx, BlockBlue, 0f);
+        SpawnDamagePopup(amount, BlockBlue);
+    }
+
+    void PlayHpHit(int amount)
+    {
+        PlayAnim(hitTrigger);
+        Spawn(hitPrefab, hitSprite, hitSfx, DamageRed, 45f);
+        Shake();
+        if (amount > 0)
+            SpawnDamagePopup(amount, DamageRed);
+    }
+
+    void SpawnDamagePopup(int amount, Color color)
+    {
+        Vector3 pos = visualRoot != null ? visualRoot.position : transform.position;
+        pos += damagePopupOffset;
+        pos += (Vector3)(Random.insideUnitCircle * damagePopupJitter);
+
+        DamagePopup popup = damagePopupPrefab != null
+            ? Instantiate(damagePopupPrefab, pos, Quaternion.identity)
+            : DamagePopup.CreateDummy(pos);
+        popup.Play(amount, color);
     }
 
     void PlayAnim(string trigger)
@@ -139,6 +197,13 @@ public class CharacterFeedback : MonoBehaviour
     {
         if (clip == null)
             return;
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySfx(clip);
+            return;
+        }
+
         Vector3 pos = visualRoot != null ? visualRoot.position : transform.position;
         AudioSource.PlayClipAtPoint(clip, pos);
     }

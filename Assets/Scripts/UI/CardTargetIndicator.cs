@@ -20,11 +20,15 @@ public class CardTargetIndicator : MonoBehaviour
 
     public void Show(Transform target)
     {
+        bool selectedNewTarget = target != null && target != follow;
         follow = target;
         if (target != null)
             transform.position = target.position + worldOffset;
 
         gameObject.SetActive(target != null);
+
+        if (selectedNewTarget && AudioManager.Instance != null)
+            AudioManager.Instance.PlayCardTargetSelect();
     }
 
     public void Hide()

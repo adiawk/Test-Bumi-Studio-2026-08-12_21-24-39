@@ -84,7 +84,13 @@ public class Player : MonoBehaviour, IEffectTarget, ICombatFeedback
         body.ClearBlock();
     }
 
-    public void TakeDamage(int amount) => body.TakeDamage(amount);
+    public void TakeDamage(int amount)
+    {
+        DamageResult result = body.ApplyDamage(amount);
+        if (feedback != null)
+            feedback.PlayIncomingHit(result.Blocked, result.HpDamage);
+    }
+
     public void GainBlock(int amount) => body.GainBlock(amount);
     public void Heal(int amount) => body.Heal(amount);
 

@@ -18,3 +18,4 @@ MonoBehaviour:
   card: {fileID: 0}
   amount: 10
   status: 0
+  coinCost: 20

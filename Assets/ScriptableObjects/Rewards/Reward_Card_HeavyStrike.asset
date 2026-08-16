@@ -18,3 +18,4 @@ MonoBehaviour:
   card: {fileID: 11400000, guid: 0f92ee941379c49499a37fa529eafd11, type: 2}
   amount: 0
   status: 0
+  coinCost: 15

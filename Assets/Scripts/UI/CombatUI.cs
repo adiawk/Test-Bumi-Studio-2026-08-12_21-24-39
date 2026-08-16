@@ -16,6 +16,7 @@ public class CombatUI : MonoBehaviour
     [SerializeField] TextMeshProUGUI enemyIntentText;
     [SerializeField] TextMeshProUGUI drawPileText;
     [SerializeField] TextMeshProUGUI discardPileText;
+    [SerializeField] TextMeshProUGUI coinsText;
     [SerializeField] Transform handArea;
     [SerializeField] Button endTurnButton;
     [SerializeField] TurnManager turnManager;
@@ -63,6 +64,12 @@ void Refresh()
             if (combatManager != null && combatManager.PendingCard != null)
                 energy += combatManager.IsDraggingCard ? "\nDrop on target" : "\nPick target";
             energyText.text = energy;
+        }
+
+        if (coinsText != null)
+        {
+            RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
+            coinsText.text = "Coins\n" + (run != null ? run.Coins : 0);
         }
 
         if (deck != null)

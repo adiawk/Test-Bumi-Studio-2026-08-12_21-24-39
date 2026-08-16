@@ -221,6 +221,7 @@ public class UICard : MonoBehaviour,
         CacheEventCamera(eventData);
         UpdateHoverTargets(eventData);
         SetVisualSortBoost(true);
+        PlayCardSfxHover();
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -254,6 +255,7 @@ public class UICard : MonoBehaviour,
 
         EnsureVisual();
         dragging = true;
+        PlayCardSfxGrab();
         hovered = false;
         returning = false;
         exactFollow = true;
@@ -339,6 +341,7 @@ public class UICard : MonoBehaviour,
 
         if (played)
         {
+            PlayCardSfxPlay();
             // Hide immediately; hand refresh will destroy the slot shortly after.
             if (visual != null)
             {
@@ -351,6 +354,7 @@ public class UICard : MonoBehaviour,
             return;
         }
 
+        PlayCardSfxCancel();
         BeginReturnVisualHome();
         if (combatManager != null)
             combatManager.CancelCardDrag();
@@ -616,5 +620,29 @@ public class UICard : MonoBehaviour,
 
         defaultBackgroundColor = background.color;
         hasBackgroundColor = true;
+    }
+
+    static void PlayCardSfxHover()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayCardHover();
+    }
+
+    static void PlayCardSfxGrab()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayCardGrab();
+    }
+
+    static void PlayCardSfxPlay()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayCardPlay();
+    }
+
+    static void PlayCardSfxCancel()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayCardCancel();
     }
 }

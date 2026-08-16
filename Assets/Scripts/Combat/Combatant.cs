@@ -31,14 +31,21 @@ public class Combatant : IEffectTarget
 
     public void TakeDamage(int amount)
     {
+        ApplyDamage(amount);
+    }
+
+    public DamageResult ApplyDamage(int amount)
+    {
         if (amount <= 0)
-            return;
+            return new DamageResult(0, 0);
 
         int blocked = Mathf.Min(Block, amount);
         Block -= blocked;
         int remaining = amount - blocked;
         if (remaining > 0)
             Hp = Mathf.Max(0, Hp - remaining);
+
+        return new DamageResult(blocked, remaining);
     }
 
     public void GainBlock(int amount)

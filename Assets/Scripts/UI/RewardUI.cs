@@ -15,6 +15,7 @@ public class RewardUI : MonoBehaviour
     [SerializeField] Button cardChoice3Button;
     [SerializeField] Button continueButton;
     readonly RewardData[] offered = new RewardData[3];
+    readonly List<Button> upgradeButtons = new List<Button>();
     bool isShop;
     bool isUpgrade;
     TextMeshProUGUI titleText;
@@ -43,6 +44,7 @@ public class RewardUI : MonoBehaviour
         if (isUpgrade)
         {
             OfferUpgrades();
+            RefreshUpgradeAffordability();
             RefreshTitle();
             return;
         }
@@ -55,6 +57,8 @@ public class RewardUI : MonoBehaviour
         BindChoice(cardChoice1Button, 0);
         BindChoice(cardChoice2Button, 1);
         BindChoice(cardChoice3Button, 2);
+        if (isShop)
+            RefreshShopAffordability();
         RefreshTitle();
     }
 
@@ -84,6 +88,7 @@ public class RewardUI : MonoBehaviour
     void OfferUpgrades()
     {
         SetOfferButtonsActive(false);
+        upgradeButtons.Clear();
         if (cardChoice1Button == null)
             return;
 
@@ -102,8 +107,8 @@ public class RewardUI : MonoBehaviour
 
             Button clone = Object.Instantiate(cardChoice1Button, grid);
             clone.gameObject.SetActive(true);
-            clone.interactable = true;
             BindUpgradeCard(clone, card);
+            upgradeButtons.Add(clone);
         }
     }
 
@@ -135,10 +140,17 @@ public class RewardUI : MonoBehaviour
         RefreshUpgradeLabel(button, card);
         button.onClick.RemoveAllListeners();
         RuntimeCard captured = card;
+        Button capturedButton = button;
         button.onClick.AddListener(() =>
         {
-            captured.Upgrade();
-            RefreshUpgradeLabel(button, captured);
+            if (GameManager.Instance == null)
+                return;
+            if (!GameManager.Instance.NotifyUpgradePurchased(captured))
+                return;
+
+            RefreshUpgradeLabel(capturedButton, captured);
+            RefreshUpgradeAffordability();
+            RefreshTitle();
         });
     }
 
@@ -148,8 +160,24 @@ public class RewardUI : MonoBehaviour
             return;
 
         TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
-        if (label != null)
-            label.text = card.Name + "\n" + card.Cost + " energy\n" + card.Description;
+        if (label == null)
+            return;
+
+        RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
+        int cost = run != null ? run.UpgradeCoinCost : 0;
+        label.text = card.Name + "\n" + card.Cost + " energy\n" + card.Description + "\n" + cost + " Coins";
+    }
+
+    void RefreshUpgradeAffordability()
+    {
+        RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
+        int coins = run != null ? run.Coins : 0;
+        int cost = run != null ? run.UpgradeCoinCost : 0;
+        for (int i = 0; i < upgradeButtons.Count; i++)
+        {
+            if (upgradeButtons[i] != null)
+                upgradeButtons[i].interactable = coins >= cost;
+        }
     }
 
     void SetOfferButtonsActive(bool active)
@@ -213,7 +241,7 @@ public class RewardUI : MonoBehaviour
         button.interactable = hasReward;
         TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
         if (label != null && hasReward)
-            label.text = offered[index].OfferLabel;
+            label.text = isShop ? offered[index].ShopOfferLabel : offered[index].OfferLabel;
 
         int captured = index;
         button.onClick.RemoveAllListeners();
@@ -227,7 +255,10 @@ public class RewardUI : MonoBehaviour
 
         if (isShop)
         {
-            GameManager.Instance.NotifyShopPurchase(offered[index]);
+            if (!GameManager.Instance.NotifyShopPurchase(offered[index]))
+                return;
+
+            RefreshShopAffordability();
             RefreshTitle();
             return;
         }
@@ -248,7 +279,14 @@ public class RewardUI : MonoBehaviour
 
         if (isUpgrade)
         {
-            titleText.text = "Upgrade";
+            RunManager upgradeRun = GameManager.Instance != null ? GameManager.Instance.Run : null;
+            if (upgradeRun == null)
+            {
+                titleText.text = "Upgrade";
+                return;
+            }
+
+            titleText.text = "Upgrade  Coins " + upgradeRun.Coins;
             return;
         }
 
@@ -265,7 +303,31 @@ public class RewardUI : MonoBehaviour
             return;
         }
 
-        titleText.text = "Shop  HP " + run.CurrentHp + "/" + run.MaxHp;
+        titleText.text = "Shop  HP " + run.CurrentHp + "/" + run.MaxHp + "  Coins " + run.Coins;
+    }
+
+    void RefreshShopAffordability()
+    {
+        RefreshChoiceAffordability(cardChoice1Button, 0);
+        RefreshChoiceAffordability(cardChoice2Button, 1);
+        RefreshChoiceAffordability(cardChoice3Button, 2);
+    }
+
+    void RefreshChoiceAffordability(Button button, int index)
+    {
+        if (button == null)
+            return;
+
+        RewardData reward = offered[index];
+        if (reward == null)
+        {
+            button.interactable = false;
+            return;
+        }
+
+        RunManager run = GameManager.Instance != null ? GameManager.Instance.Run : null;
+        int coins = run != null ? run.Coins : 0;
+        button.interactable = coins >= reward.CoinCost;
     }
 
     TextMeshProUGUI FindTitleText()

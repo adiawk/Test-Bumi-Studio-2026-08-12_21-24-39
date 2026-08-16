@@ -212,7 +212,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   visualRoot: {fileID: 193388550703810720}
-  shakeRoot: {fileID: 0}
+  shakeRoot: {fileID: 193388550703810720}
   animator: {fileID: 0}
   attackTrigger: Attack
   blockTrigger: Block
@@ -222,6 +222,10 @@ MonoBehaviour:
   hitPrefab: {fileID: 7390539322754966590, guid: 363cdfec871d50346925ce52a038d230, type: 3}
   blockPrefab: {fileID: 7456747772257143814, guid: 2e32e8f3b373c444a80f0f506e1a2fe7, type: 3}
   healPrefab: {fileID: 1104888692427197012, guid: 67746651e578c5b429ffb04faac2b1c4, type: 3}
+  damagePopupPrefab: {fileID: 497832813723590796, guid: 4a28dacfcf178af44a2fc88c6bf095e8, type: 3}
+  mixedHitDelay: 0.2
+  damagePopupOffset: {x: 0, y: 1.15, z: 0}
+  damagePopupJitter: 0.18
   hitSprite: {fileID: 0}
   blockSprite: {fileID: 0}
   healSprite: {fileID: 0}
@@ -231,6 +235,7 @@ MonoBehaviour:
   healSfx: {fileID: 0}
   shakeDuration: 0.18
   shakeStrength: 0.12
+  deathHideDelay: 0.4
 --- !u!1 &6067922914604239501
 GameObject:
   m_ObjectHideFlags: 0

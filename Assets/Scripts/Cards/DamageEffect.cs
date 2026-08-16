@@ -10,7 +10,7 @@ public class DamageEffect : CardEffect
 
     public int Amount => amount;
 
-public override void Resolve(EffectContext context)
+    public override void Resolve(EffectContext context)
     {
         if (context == null || context.Target == null)
             return;
@@ -37,9 +37,5 @@ public override void Resolve(EffectContext context)
         ICombatFeedback sourceFx = context.Source as ICombatFeedback;
         if (sourceFx != null)
             sourceFx.PlayAttackFeedback();
-
-        ICombatFeedback targetFx = context.Target as ICombatFeedback;
-        if (targetFx != null)
-            targetFx.PlayHitFeedback();
     }
 }

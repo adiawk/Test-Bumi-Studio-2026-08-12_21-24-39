@@ -13,6 +13,11 @@ public class RunManager : MonoBehaviour
     [SerializeField] List<CardData> starterDeck = new List<CardData>();
     [SerializeField] List<RewardData> rewardPool = new List<RewardData>();
     [SerializeField] int startingMaxHp = 50;
+    [SerializeField] int startingCoins = 0;
+    [SerializeField] int combatClearCoins = 10;
+    [SerializeField] int eliteClearCoins = 20;
+    [SerializeField] int bossClearCoins = 50;
+    [SerializeField] int upgradeCoinCost = 15;
     [SerializeField] EncounterData stage1Encounter;
     [SerializeField] EncounterData stage2Encounter;
     [SerializeField] EncounterData bossEncounter;
@@ -23,6 +28,8 @@ public class RunManager : MonoBehaviour
     public IReadOnlyList<RewardData> RewardPool => rewardPool;
     public int CurrentHp { get; private set; }
     public int MaxHp { get; private set; }
+    public int Coins { get; private set; }
+    public int UpgradeCoinCost => upgradeCoinCost;
     public bool LastRunWon { get; private set; }
     public StageManager Stages => stageManager;
     public bool IsRunActive { get; private set; }
@@ -50,6 +57,7 @@ public class RunManager : MonoBehaviour
         LastRunWon = false;
         MaxHp = startingMaxHp;
         CurrentHp = startingMaxHp;
+        Coins = startingCoins;
         pendingModifiers.Clear();
         runDeck.Clear();
         if (starterDeck != null)
@@ -79,6 +87,41 @@ public class RunManager : MonoBehaviour
     {
         if (amount > 0)
             SetHp(CurrentHp + amount);
+    }
+
+    public void AddCoins(int amount)
+    {
+        if (amount > 0)
+            Coins += amount;
+    }
+
+    public bool TrySpendCoins(int amount)
+    {
+        if (amount < 0)
+            return false;
+        if (amount == 0)
+            return true;
+        if (Coins < amount)
+            return false;
+
+        Coins -= amount;
+        return true;
+    }
+
+    public int GetCombatClearReward(MapNodeType nodeType)
+    {
+        if (nodeType == MapNodeType.Boss)
+            return Mathf.Max(0, bossClearCoins);
+        if (nodeType == MapNodeType.Elite)
+            return Mathf.Max(0, eliteClearCoins);
+        return Mathf.Max(0, combatClearCoins);
+    }
+
+    public int GrantCombatClearReward(MapNodeType nodeType)
+    {
+        int amount = GetCombatClearReward(nodeType);
+        AddCoins(amount);
+        return amount;
     }
 
     public void AddCardToRunDeck(CardData card)

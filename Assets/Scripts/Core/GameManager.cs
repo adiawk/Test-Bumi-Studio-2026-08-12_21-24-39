@@ -57,6 +57,14 @@ public class GameManager : MonoBehaviour
             LoadCombat();
     }
 
+    public int GrantCombatClearReward()
+    {
+        if (runManager == null)
+            return 0;
+
+        return runManager.GrantCombatClearReward(runManager.Stages.SelectedNodeType);
+    }
+
     public void NotifyCombatWon()
     {
         if (runManager == null)
@@ -92,10 +100,26 @@ public class GameManager : MonoBehaviour
         LoadMap();
     }
 
-    public void NotifyShopPurchase(RewardData reward)
+    public bool NotifyShopPurchase(RewardData reward)
     {
-        if (runManager != null)
-            runManager.TryApplyReward(reward);
+        if (runManager == null || reward == null)
+            return false;
+        if (!runManager.TrySpendCoins(reward.CoinCost))
+            return false;
+
+        runManager.TryApplyReward(reward);
+        return true;
+    }
+
+    public bool NotifyUpgradePurchased(RuntimeCard card)
+    {
+        if (runManager == null || card == null || !card.CanUpgrade)
+            return false;
+        if (!runManager.TrySpendCoins(runManager.UpgradeCoinCost))
+            return false;
+
+        card.Upgrade();
+        return true;
     }
 
     public void NotifyShopClosed()

@@ -22,6 +22,7 @@ public class CombatManager : MonoBehaviour
     [SerializeField] int playerMaxEnergy = 3;
     [SerializeField] CardTargetIndicator targetIndicatorPrefab;
     [SerializeField] CardTargetPointer targetPointerPrefab;
+    [SerializeField] CombatWinUI winUI;
 
     readonly List<Enemy> spawnedEnemies = new List<Enemy>();
     Enemy selectedEnemy;
@@ -580,8 +581,7 @@ public class CombatManager : MonoBehaviour
         {
             PersistHp();
             EndCombat();
-            if (GameManager.Instance != null)
-                GameManager.Instance.NotifyCombatWon();
+            ShowCombatWon();
             return true;
         }
 
@@ -595,6 +595,27 @@ public class CombatManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    void ShowCombatWon()
+    {
+        int reward = 0;
+        int total = 0;
+        if (GameManager.Instance != null)
+        {
+            reward = GameManager.Instance.GrantCombatClearReward();
+            if (GameManager.Instance.Run != null)
+                total = GameManager.Instance.Run.Coins;
+        }
+
+        if (winUI != null)
+        {
+            winUI.Show(reward, total);
+            return;
+        }
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.NotifyCombatWon();
     }
 
     void PersistHp()

@@ -10,6 +10,7 @@ public class MapUI : MonoBehaviour
 {
     [SerializeField] Transform nodeRoot;
     [SerializeField] TextMeshProUGUI promptText;
+    [SerializeField] TextMeshProUGUI coinsText;
     [SerializeField] ScrollRect scrollRect;
 
     readonly List<StageNodeButton> nodes = new List<StageNodeButton>();
@@ -77,6 +78,9 @@ public class MapUI : MonoBehaviour
 
         if (promptText != null)
             promptText.text = atStart ? "Select a starting room" : "Select the next room";
+
+        if (coinsText != null)
+            coinsText.text = "Coins: " + (run != null ? run.Coins : 0);
     }
 
     static bool IsReachable(StageNodeButton node, bool atStart, StageNodeButton lastCompleted)

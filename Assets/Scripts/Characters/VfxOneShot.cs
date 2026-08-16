@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// One-shot world VFX. Swap the SpriteRenderer sprite or replace this prefab.
-/// Assign AudioClip here or on CharacterFeedback.
+/// Assign AudioClip here or on CharacterFeedback. Playback goes through AudioManager.
 /// </summary>
 public class VfxOneShot : MonoBehaviour
 {
@@ -28,8 +28,7 @@ public class VfxOneShot : MonoBehaviour
         spriteRenderer.color = color;
 
         AudioClip playClip = clip != null ? clip : sfx;
-        if (playClip != null)
-            AudioSource.PlayClipAtPoint(playClip, transform.position);
+        PlaySfx(playClip);
 
         transform.localScale = Vector3.one * startScale;
         age = 0f;
@@ -50,5 +49,16 @@ public class VfxOneShot : MonoBehaviour
 
         if (t >= 1f)
             Destroy(gameObject);
+    }
+
+    void PlaySfx(AudioClip clip)
+    {
+        if (clip == null)
+            return;
+
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySfx(clip);
+        else
+            AudioSource.PlayClipAtPoint(clip, transform.position);
     }
 }

@@ -12,11 +12,13 @@ public class RewardData : ScriptableObject
     [SerializeField] CardData card;
     [SerializeField] int amount = 1;
     [SerializeField] StatusId status = StatusId.Strength;
+    [SerializeField] int coinCost;
 
     public RewardKind Kind => kind;
     public CardData Card => card;
     public int Amount => amount;
     public StatusId Status => status;
+    public int CoinCost => Mathf.Max(0, coinCost);
 
     public string DisplayName
     {
@@ -48,5 +50,10 @@ public class RewardData : ScriptableObject
                 return card.CardName + "\n" + card.Cost + " energy\n" + card.Description;
             return DisplayName + "\n" + Description;
         }
+    }
+
+    public string ShopOfferLabel
+    {
+        get { return OfferLabel + "\n" + CoinCost + " Coins"; }
     }
 }

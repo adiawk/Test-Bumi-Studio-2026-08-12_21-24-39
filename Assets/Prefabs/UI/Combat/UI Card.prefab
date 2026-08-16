@@ -104,13 +104,16 @@ MonoBehaviour:
   cardEnergyCostText: {fileID: 6314260101203775468}
   background: {fileID: 9076899359510112710}
   button: {fileID: 8071004246524765624}
-  hoverScale: 1.32
-  hoverLift: 50
+  hoverScale: 1.43
+  hoverLift: 60
   hoverTiltDegrees: 6
-  dragScale: 1.18
+  dragScale: 1.2
   dragTiltPerVelocity: 0.035
   maxDragTilt: 14
-  playLiftThreshold: 120
+  playLiftThreshold: 200
+  dragLiftLimit: 100
+  dragFollowXFactor: 0.2
+  pointerOriginOffsetY: 90
   positionSpring: 18
   scaleSpring: 16
   tiltSpring: 14
