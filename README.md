@@ -82,3 +82,17 @@ If I had 2–3 extra days, in this order:
 3. **Richer enemy intents.** Weighted patterns, multi-enemy focus fire, and at least one boss-only intent, still using `EnemyIntent` so the telegraph UI stays the same.
 4. **End-of-run summary.** Cards added, rooms cleared, remaining HP — the Result scene currently only shows Victory / Defeat.
 5. **A short tutorial beat** on the first map: energy, Block, and “enemies act after End Turn”.
+
+
+## Known Issues
+
+- **Reward Completion** Only grant coin for player, and not actual card. Card can be added or upgrade through Shop or Upgrade Node in Map.
+- **Non-combat Node** Cannot re-visite, once player leave shop, reward or upgrade node, they cannot go back to re-shop or else.
+- **Debug cheats ship in the playable scenes.** Map has Heal / +50 Coins; Combat has Kill Player / Kill Enemies. They are not editor-only, so they also appear in the itch.io build.
+- **Result → New Run skips the main menu.** Result only show Win or Lose text and not yet implement player summeries decision while running the game.
+- **Shop offers are not consumed.** Buying a card or heal leaves that offer in place, so the same item can be bought again if you still have coins.
+- **Card upgrades have no cap.** A damage/block card can be upgraded every visit for +2 as long as you can pay. Heal and draw cards cannot be upgraded.
+- **Enemy intents are only Attack → Defend.** Readable on purpose; it gets repetitive on a long map.
+- **Weak (and Strength) do not expire.** `ExpireTimedStatuses` only clears Vulnerable and ticks Stun, so a next-combat Weak reward lasts the whole fight.
+- **No save/load.** Closing the game ends the run.
+- **No card remove.** The run deck only grows.
