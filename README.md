@@ -1,6 +1,6 @@
-# Test Bumi Studio
+# Dungeon Deckbuilder
 
-A 2D turn-based deckbuilder prototype for the Bumi Studio programmer technical test (Option A).
+A 2D turn-based deckbuilder prototype for the Bumi Studio programmer technical test
 
 ## Game Overview
 
@@ -19,12 +19,12 @@ The map has multiple rooms (normal combat, elite, reward, boss), so a run has mo
 - Engine & version used: Unity 6000.0.75f1, C#
 - Language: C#
 - Platform: Windows PC
-- Build location: `/Build/` *(Windows `.exe` goes here, or replace this line with a Google Drive / itch.io link)*
+- Build location: https://adiawk.itch.io/dungeon-deckbuilder
 
 ### Play the Windows build
 
-1. Download or clone the repository.
-2. Open `/Build/` and run `Test Bumi Studio.exe`.
+1. Download rar file
+2. Open and run `Test Bumi Studio.exe`.
 3. If Windows SmartScreen appears, choose **More info** → **Run anyway**.
 
 ### Play from the Unity Editor
@@ -68,8 +68,8 @@ I treated this as an architecture test, not a content test. The card system had 
 
 **What I deliberately skipped**
 
-- No paid plugins and no card-game framework. Gameplay code is custom. Visuals come from a free 2D character pack (`Assets/Free_Pack`). The pack’s demo `CharacterController_2D` is not used in gameplay.
-- No card upgrade, remove, or synergies. Those are stretch goals; the effect list can support them later without rewriting combat.
+- No paid plugins and no card-game framework. Gameplay code is custom. Visuals come from a free 2D character pack.
+- No card remove, or synergies. Those are stretch goals; the effect list can support them later without rewriting combat.
 - No save/load. A run lives in memory on the persistent managers.
 - Unity MCP (`com.coplaydev.unity-mcp`) is included as an editor/development helper. It is not a gameplay framework and is not required to play the build.
 
@@ -77,22 +77,8 @@ I treated this as an architecture test, not a content test. The card system had 
 
 If I had 2–3 extra days, in this order:
 
-1. **Windows build in `/Build/`** (or a hosted link) and a pass on first-run UX: energy, Block, and intent are readable, but the map and reward screens still look like placeholders.
-2. **Skip / take-nothing on the reward screen.** `RewardUI` already has an unused Continue path; I would wire “skip” so a reward room is not a forced add.
-3. **Card remove (and a simple upgrade).** A rest-site node that removes one card, or an upgrade that swaps a `CardData` reference (Strike → Heavy Strike) without new combat code.
-4. **Richer enemy intents.** Weighted patterns, multi-enemy focus fire, and at least one boss-only intent, still using `EnemyIntent` so the telegraph UI stays the same.
-5. **End-of-run summary.** Cards added, rooms cleared, remaining HP — the Result scene currently only shows Victory / Defeat.
-6. **Stop rebuilding the whole hand every time it changes.** `CombatUI` destroys and respawns card views when draw/discard counts change, which is brittle if you draw mid-turn (Quick Draw) while dragging.
-7. **Audio and a short tutorial beat** on the first map: energy, Block, and “enemies act after End Turn”.
-
-## Known Issues
-
-- **No Windows `.exe` is in the repo yet.** Build it into `/Build/` before submission, or host it and put the link under How to Run. Note that the Unity `.gitignore` ignores `/Build/`; force-add the folder or use a link.
-- **Reward cannot be skipped.** Continue is hidden; you must pick a card.
-- **Result → New Run** calls `StartNewRun()` and goes straight to the map, not the main menu. The run reset is correct; the screen flow is not what the comment on `ResultUI` describes.
-- **Enemy AI is only Attack / Defend alternating.** Fine for a prototype; it will feel repetitive on a long map.
-- **No card upgrade, removal, synergies, or run history.** Called out as stretch goals I did not take.
-- **Hand UI can flicker** when the hand list changes (draw effects) because views are fully rebuilt.
-- **Combat HUD leftover fields.** `CombatUI` still has unused HP/intent text references; live HP/Block/intent are on `CharacterStatusUI` over the characters.
-- **`Free_Pack` includes a demo character controller.** It is not used by combat.
-- **No audio.**
+1. **Windows build** and a pass on first-run UX: energy, Block, and intent are readable, but the map and reward screens still look like placeholders.
+2. **Card remove (and a simple upgrade).** A rest-site node that removes one card, or an upgrade that swaps a `CardData` reference (Strike → Heavy Strike) without new combat code.
+3. **Richer enemy intents.** Weighted patterns, multi-enemy focus fire, and at least one boss-only intent, still using `EnemyIntent` so the telegraph UI stays the same.
+4. **End-of-run summary.** Cards added, rooms cleared, remaining HP — the Result scene currently only shows Victory / Defeat.
+5. **A short tutorial beat** on the first map: energy, Block, and “enemies act after End Turn”.
